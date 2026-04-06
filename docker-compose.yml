@@ -1,0 +1,14 @@
+services:
+  letssingtogether:
+    build:
+      context: .
+      args:
+        GOOGLE_API_KEY: AIzaSyD33q5xSnd3T6Zr7b1vyGDQu-ZDluH_RgI
+    container_name: letssingtogether
+    ports:
+      - "3100:3000"
+    environment:
+      - GOOGLE_API_KEY=AIzaSyD33q5xSnd3T6Zr7b1vyGDQu-ZDluH_RgI
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

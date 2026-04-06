@@ -1,0 +1,248 @@
+[
+  {
+    "title": "목적을 향한 전진",
+    "artist": "아해",
+    "category": "아해노래",
+    "tags": [
+      "목적",
+      "전진",
+      "잔잔"
+    ],
+    "sheetMusicUrls": [],
+    "lyrics": [
+      {
+        "line": "걸어서 가고 달려도 보자",
+        "chords": [
+          "C",
+          "G",
+          "Am",
+          "C",
+          "F",
+          "C",
+          "Dmy",
+          "G"
+        ]
+      },
+      {
+        "line": "날지는 못해도 뛰어는 보자",
+        "chords": [
+          ""
+        ]
+      },
+      {
+        "line": "시간 속에 몸은 머물렀어도",
+        "chords": [
+          "C",
+          "G",
+          "Am",
+          "C"
+        ]
+      },
+      {
+        "line": "마음으로 목적을 정해가면서",
+        "chords": [
+          "F",
+          "C",
+          "Dmn",
+          "G"
+        ]
+      },
+      {
+        "line": "미래를 향해서 세월을 타고",
+        "chords": [
+          "C",
+          "G",
+          "Am",
+          "C",
+          "F",
+          "C",
+          "Dmn",
+          "G"
+        ]
+      },
+      {
+        "line": "발걸음을 옮겨 보자.",
+        "chords": [
+          "C",
+          "G",
+          "Am-C"
+        ]
+      },
+      {
+        "line": "발걸음을 옮겨 보자.",
+        "chords": [
+          "F-G-C"
+        ]
+      }
+    ],
+    "translations": {
+      "en": {
+        "title": "Forward March Towards the Goal",
+        "artist": "Ahae",
+        "lines": [
+          "Let's walk and try to run",
+          "Even if we can't fly, let's try to jump",
+          "Even if our bodies remain in time",
+          "While setting goals with our hearts",
+          "Riding the waves of time towards the future",
+          "Let's move forward.",
+          "Let's move forward."
+        ]
+      },
+      "ja": {
+        "title": "目標に向かって前進",
+        "artist": "アヘ",
+        "lines": [
+          "歩いて、走ってみよう",
+          "飛べなくても、跳んでみよう",
+          "時間が経っても、体は留まっても",
+          "心で目標を定めながら",
+          "未来に向かって歳月を乗り越え",
+          "一歩を踏み出してみよう。",
+          "一歩を踏み出してみよう。"
+        ]
+      },
+      "zh": {
+        "title": "朝着目标前进",
+        "artist": "Ahae",
+        "lines": [
+          "走着，也试着跑起来",
+          "即使不能飞，也试着跳起来",
+          "即使身体停留在时间里",
+          "心中一边设定目标",
+          "朝着未来，乘着岁月",
+          "让我们迈出步伐。",
+          "让我们迈出步伐。"
+        ]
+      },
+      "es": {
+        "title": "Avance hacia la meta",
+        "artist": "Ahae",
+        "lines": [
+          "Caminemos e intentemos correr",
+          "Aunque no podamos volar, intentemos saltar",
+          "Aunque nuestros cuerpos permanezcan en el tiempo",
+          "Mientras fijamos metas con nuestros corazones",
+          "Cabalgando las olas del tiempo hacia el futuro",
+          "Demos un paso adelante.",
+          "Demos un paso adelante."
+        ]
+      },
+      "fr": {
+        "title": "Marche en avant vers le but",
+        "artist": "Ahae",
+        "lines": [
+          "Marchons et essayons de courir",
+          "Même si nous ne pouvons pas voler, essayons de sauter",
+          "Même si nos corps restent dans le temps",
+          "Tout en fixant des objectifs avec nos cœurs",
+          "Surfer sur les vagues du temps vers l'avenir",
+          "Faisons un pas en avant.",
+          "Faisons un pas en avant."
+        ]
+      },
+      "de": {
+        "title": "Vorwärtsmarsch zum Ziel",
+        "artist": "Ahae",
+        "lines": [
+          "Lass uns gehen und versuchen zu rennen",
+          "Auch wenn wir nicht fliegen können, lass uns versuchen zu springen",
+          "Auch wenn unsere Körper in der Zeit verweilen",
+          "Während wir uns mit unseren Herzen Ziele setzen",
+          "Auf den Wellen der Zeit in die Zukunft reiten",
+          "Lasst uns einen Schritt nach vorne machen.",
+          "Lasst uns einen Schritt nach vorne machen."
+        ]
+      },
+      "pt": {
+        "title": "Marcha Avante Rumo ao Objetivo",
+        "artist": "Ahae",
+        "lines": [
+          "Vamos andar e tentar correr",
+          "Mesmo que não possamos voar, vamos tentar pular",
+          "Mesmo que nossos corpos permaneçam no tempo",
+          "Enquanto definimos metas com nossos corações",
+          "Cavalgando as ondas do tempo em direção ao futuro",
+          "Vamos dar um passo em frente.",
+          "Vamos dar um passo em frente."
+        ]
+      },
+      "vi": {
+        "title": "Tiến Về Phía Mục Tiêu",
+        "artist": "Ahae",
+        "lines": [
+          "Hãy đi bộ và thử chạy",
+          "Dù không thể bay, hãy thử nhảy",
+          "Dù cơ thể ta dừng lại trong thời gian",
+          "Vừa đặt mục tiêu trong tim",
+          "Cưỡi trên những con sóng thời gian hướng về tương lai",
+          "Hãy tiến lên phía trước.",
+          "Hãy tiến lên phía trước."
+        ]
+      },
+      "th": {
+        "title": "เดินหน้าสู่เป้าหมาย",
+        "artist": "อาแฮ",
+        "lines": [
+          "เดินแล้วลองวิ่งดู",
+          "ถึงแม้จะบินไม่ได้ก็ลองกระโดดดู",
+          "ถึงแม้ร่างกายจะหยุดอยู่ในเวลา",
+          "ในขณะที่ตั้งเป้าหมายในใจ",
+          "ขี่คลื่นแห่งเวลาไปสู่อนาคต",
+          "มาเดินหน้ากันเถอะ",
+          "มาเดินหน้ากันเถอะ"
+        ]
+      },
+      "tl": {
+        "title": "Pagsulong Patungo sa Layunin",
+        "artist": "Ahae",
+        "lines": [
+          "Maglakad tayo at subukang tumakbo",
+          "Kahit hindi tayo makalipad, subukan nating tumalon",
+          "Kahit manatili ang ating mga katawan sa panahon",
+          "Habang nagtatakda ng mga layunin sa ating mga puso",
+          "Sakay sa mga alon ng panahon patungo sa hinaharap",
+          "Sumulong tayo.",
+          "Sumulong tayo."
+        ]
+      },
+      "id": {
+        "title": "Maju Terus Menuju Tujuan",
+        "artist": "Ahae",
+        "lines": [
+          "Mari berjalan dan mencoba berlari",
+          "Meskipun kita tidak bisa terbang, mari mencoba melompat",
+          "Meskipun tubuh kita tetap dalam waktu",
+          "Sambil menetapkan tujuan dengan hati kita",
+          "Menunggangi ombak waktu menuju masa depan",
+          "Mari melangkah maju.",
+          "Mari melangkah maju."
+        ]
+      },
+      "ee": {
+        "title": "Eesmärgi poole edasi liikumine",
+        "artist": "Ahae",
+        "lines": [
+          "Kõndigem ja proovigem joosta",
+          "Isegi kui me ei saa lennata, proovigem hüpata",
+          "Isegi kui meie keha jääb ajas püsima",
+          "Samal ajal seades oma südames eesmärke",
+          "Sõites aja lainetel tuleviku poole",
+          "Liigume edasi.",
+          "Liigume edasi."
+        ]
+      }
+    },
+    "romanization": [
+      "georeoseo gago dallyeodo boja",
+      "nalljineun motaedo ttwieoneun boja",
+      "sigan soge momeun meomulleosseodo",
+      "maeumeuro mokjeogeul jeonghaegamyeonseo",
+      "miraereul hyanghaeseo seworeul tago",
+      "balgeoreumeul 옮gyeo boja.",
+      "balgeoreumeul 옮gyeo boja."
+    ],
+    "id": "1775482630668",
+    "createdAt": "2026-04-06T13:37:10.668Z"
+  }
+]

@@ -26,7 +26,12 @@ export default function UploadPage() {
   const [tagsInput, setTagsInput] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [audioFileName, setAudioFileName] = useState("");
   const [sheetMusicInput, setSheetMusicInput] = useState("");
+  const [sheetMusicFiles, setSheetMusicFiles] = useState<File[]>([]);
+  const [sheetMusicPreviews, setSheetMusicPreviews] = useState<string[]>([]);
+  const [uploadingSheets, setUploadingSheets] = useState(false);
   const [lyrics, setLyrics] = useState<LyricLine[]>([{ line: "", chords: "" }]);
   const [romanization, setRomanization] = useState("");
   const [translations, setTranslations] = useState<TranslationInput[]>([
@@ -73,14 +78,65 @@ export default function UploadPage() {
       return;
     }
     setSubmitting(true);
+
+    // Upload sheet music files first
+    let uploadedUrls: string[] = [];
+    if (sheetMusicFiles.length > 0) {
+      setUploadingSheets(true);
+      try {
+        const formData = new FormData();
+        sheetMusicFiles.forEach((f) => formData.append("files", f));
+        const uploadRes = await fetch("/api/upload-image", {
+          method: "POST",
+          body: formData,
+        });
+        if (!uploadRes.ok) {
+          const data = await uploadRes.json();
+          throw new Error(data.error || "File upload failed");
+        }
+        const uploadData = await uploadRes.json();
+        uploadedUrls = uploadData.urls;
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "File upload error");
+        setSubmitting(false);
+        setUploadingSheets(false);
+        return;
+      }
+      setUploadingSheets(false);
+    }
+
+    // Upload audio file
+    let finalAudioUrl = audioUrl.trim() || undefined;
+    if (audioFile) {
+      try {
+        const formData = new FormData();
+        formData.append("files", audioFile);
+        const audioRes = await fetch("/api/upload-image", {
+          method: "POST",
+          body: formData,
+        });
+        if (!audioRes.ok) {
+          const data = await audioRes.json();
+          throw new Error(data.error || "Audio upload failed");
+        }
+        const audioData = await audioRes.json();
+        finalAudioUrl = audioData.urls[0];
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Audio upload error");
+        setSubmitting(false);
+        return;
+      }
+    }
+
+    const urlSheets = sheetMusicInput.split("\n").map((s) => s.trim()).filter(Boolean);
     const body = {
       title: title.trim(),
       artist: artist.trim(),
       category,
       tags: tagsInput.split(",").map((s) => s.trim().replace(/^#/, "")).filter(Boolean),
       youtubeUrl: youtubeUrl.trim() || undefined,
-      audioUrl: audioUrl.trim() || undefined,
-      sheetMusicUrls: sheetMusicInput.split("\n").map((s) => s.trim()).filter(Boolean),
+      audioUrl: finalAudioUrl,
+      sheetMusicUrls: [...urlSheets, ...uploadedUrls],
       lyrics: lyrics.filter((l) => l.line.trim()).map((l) => ({
         line: l.line.trim(),
         chords: l.chords.split(",").map((c) => c.trim()),
@@ -156,6 +212,39 @@ export default function UploadPage() {
             <input type="url" value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." className="w-full border border-border rounded-lg px-3 py-2 text-sm" />
           </div>
           <div>
+            <label className="block text-sm font-medium mb-1">{t("upload.audioFile")}</label>
+            <div className="flex items-center gap-3">
+              <label className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm cursor-pointer bg-primary text-white hover:opacity-90 transition-opacity">
+                <input
+                  type="file"
+                  accept="audio/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setAudioFile(file);
+                    setAudioFileName(file.name);
+                    e.target.value = "";
+                  }}
+                />
+                {t("upload.audioFileSelect")}
+              </label>
+              {audioFileName && (
+                <div className="flex items-center gap-2 text-sm text-muted">
+                  <span>{audioFileName}</span>
+                  <button
+                    type="button"
+                    onClick={() => { setAudioFile(null); setAudioFileName(""); }}
+                    className="text-red-400 hover:text-red-600"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-muted mt-1">{t("upload.audioFileHint")}</p>
+          </div>
+          <div>
             <label className="block text-sm font-medium mb-1">{t("upload.audioUrl")}</label>
             <input type="url" value={audioUrl} onChange={(e) => setAudioUrl(e.target.value)} placeholder="https://example.com/song.mp3" className="w-full border border-border rounded-lg px-3 py-2 text-sm" />
             <p className="text-xs text-muted mt-1">{t("upload.audioHint")}</p>
@@ -165,6 +254,57 @@ export default function UploadPage() {
         {/* Piano Sheet Music */}
         <section className="bg-card border border-border rounded-xl p-6 space-y-4">
           <h2 className="text-lg font-bold">{t("upload.pianoSheet")}</h2>
+
+          {/* File Upload */}
+          <div>
+            <label className="block text-sm font-medium mb-1">{t("upload.pianoSheetFile")}</label>
+            <label className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm cursor-pointer bg-primary text-white hover:opacity-90 transition-opacity">
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  if (!files.length) return;
+                  setSheetMusicFiles((prev) => [...prev, ...files]);
+                  const newPreviews = files.map((f) => URL.createObjectURL(f));
+                  setSheetMusicPreviews((prev) => [...prev, ...newPreviews]);
+                  e.target.value = "";
+                }}
+              />
+              {t("upload.pianoSheetSelect")}
+            </label>
+            <p className="text-xs text-muted mt-1">{t("upload.pianoSheetFileHint")}</p>
+          </div>
+
+          {/* File Previews */}
+          {sheetMusicPreviews.length > 0 && (
+            <div className="flex flex-wrap gap-3">
+              {sheetMusicPreviews.map((src, idx) => (
+                <div key={idx} className="relative group">
+                  <img
+                    src={src}
+                    alt={`Sheet ${idx + 1}`}
+                    className="h-28 w-auto rounded-lg border border-border object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      URL.revokeObjectURL(src);
+                      setSheetMusicFiles((prev) => prev.filter((_, i) => i !== idx));
+                      setSheetMusicPreviews((prev) => prev.filter((_, i) => i !== idx));
+                    }}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* URL Input */}
           <div>
             <label className="block text-sm font-medium mb-1">{t("upload.pianoSheetUrl")}</label>
             <textarea
@@ -324,7 +464,7 @@ export default function UploadPage() {
         </section>
 
         <button type="submit" disabled={submitting} className="w-full bg-primary text-white py-3 rounded-xl font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50">
-          {submitting ? t("upload.submitting") : t("upload.submit")}
+          {uploadingSheets ? t("upload.uploadingSheets") : submitting ? t("upload.submitting") : t("upload.submit")}
         </button>
       </form>
     </div>

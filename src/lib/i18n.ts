@@ -101,6 +101,15 @@ const translations: Record<string, Record<SiteLang, string>> = {
     pt: "Todos", vi: "Tất cả", th: "ทั้งหมด",
     tl: "Lahat", id: "Semua", ee: "Katã",
   },
+  "search.placeholder": {
+    ko: "노래 제목, 아티스트, 가사로 검색...", en: "Search by title, artist, or lyrics...",
+    ja: "タイトル、アーティスト、歌詞で検索...", zh: "按标题、艺人或歌词搜索...",
+    es: "Buscar por título, artista o letra...", fr: "Rechercher par titre, artiste ou paroles...",
+    de: "Suche nach Titel, Künstler oder Text...", pt: "Pesquisar por título, artista ou letra...",
+    vi: "Tìm theo tên, nghệ sĩ hoặc lời bài hát...", th: "ค้นหาด้วยชื่อ ศิลปิน หรือเนื้อเพลง...",
+    tl: "Hanapin sa pamagat, artist, o liriko...", id: "Cari berdasarkan judul, artis, atau lirik...",
+    ee: "Di dzi ha ƒe ŋkɔ, hadzilawo alo nyawo me...",
+  },
   "filter.noResults": {
     ko: "조건에 맞는 노래가 없어요.", en: "No songs match the filters.",
     ja: "条件に合う曲がありません。", zh: "没有符合条件的歌曲。",

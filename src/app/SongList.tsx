@@ -8,6 +8,7 @@ import { useLang } from "@/lib/LangContext";
 
 export default function SongList({ songs }: { songs: Song[] }) {
   const { lang, t } = useLang();
+  const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [showGayo, setShowGayo] = useState(false);
@@ -60,11 +61,21 @@ export default function SongList({ songs }: { songs: Song[] }) {
   }, [showGayo]);
 
   const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return songs
       .filter((s) => {
         if (!showGayo && s.category === "가요" && activeCategory !== "가요") return false;
         if (activeCategory && s.category !== activeCategory) return false;
         if (activeTag && !s.tags?.includes(activeTag)) return false;
+        if (q) {
+          const title = songTitle(s).toLowerCase();
+          const artist = songArtist(s).toLowerCase();
+          const lyrics = s.lyrics.map((l) => l.line).join(" ").toLowerCase();
+          const tags = (s.tags || []).join(" ").toLowerCase();
+          if (!title.includes(q) && !artist.includes(q) && !lyrics.includes(q) && !tags.includes(q)) {
+            return false;
+          }
+        }
         return true;
       })
       .sort((a, b) => {
@@ -73,13 +84,24 @@ export default function SongList({ songs }: { songs: Song[] }) {
         if (catA !== catB) return catA - catB;
         return a.title.localeCompare(b.title, "ko");
       });
-  }, [songs, activeCategory, activeTag]);
+  }, [songs, activeCategory, activeTag, searchQuery, showGayo, lang]);
 
   const pillActive = "bg-primary text-white";
   const pillInactive = "bg-card border border-border text-muted hover:text-foreground";
 
   return (
     <div>
+      {/* Search */}
+      <div className="mb-6">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={t("search.placeholder")}
+          className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+        />
+      </div>
+
       <div className="space-y-4 mb-8">
         {/* Category */}
         <div>

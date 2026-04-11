@@ -31,6 +31,7 @@ async function writeBlob(songs: Song[]) {
   await put(BLOB_NAME, JSON.stringify(songs, null, 2), {
     access: "public",
     addRandomSuffix: false,
+    allowOverwrite: true,
     contentType: "application/json",
   });
 }

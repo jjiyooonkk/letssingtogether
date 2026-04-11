@@ -19,6 +19,8 @@ export default function AdminPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [retranslating, setRetranslating] = useState(false);
+  const [uploadingSheet, setUploadingSheet] = useState(false);
+  const [uploadingAudio, setUploadingAudio] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [showGayo, setShowGayo] = useState(false);
 
@@ -128,6 +130,51 @@ export default function AdminPage() {
       setSaving(false);
       setRetranslating(false);
     }
+  }
+
+  async function handleSheetUpload(files: FileList) {
+    if (!editingSong) return;
+    setUploadingSheet(true);
+    try {
+      const formData = new FormData();
+      Array.from(files).forEach((f) => formData.append("files", f));
+      const res = await fetch("/api/upload-image", { method: "POST", body: formData });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setEditingSong({
+        ...editingSong,
+        sheetMusicUrls: [...(editingSong.sheetMusicUrls || []), ...data.urls],
+      });
+    } catch {
+      setMessage({ type: "error", text: "악보 업로드 실패" });
+    } finally {
+      setUploadingSheet(false);
+    }
+  }
+
+  async function handleAudioUpload(file: File) {
+    if (!editingSong) return;
+    setUploadingAudio(true);
+    try {
+      const formData = new FormData();
+      formData.append("files", file);
+      const res = await fetch("/api/upload-image", { method: "POST", body: formData });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setEditingSong({ ...editingSong, audioUrl: data.urls[0] });
+    } catch {
+      setMessage({ type: "error", text: "오디오 업로드 실패" });
+    } finally {
+      setUploadingAudio(false);
+    }
+  }
+
+  function removeSheetUrl(idx: number) {
+    if (!editingSong) return;
+    setEditingSong({
+      ...editingSong,
+      sheetMusicUrls: (editingSong.sheetMusicUrls || []).filter((_, i) => i !== idx),
+    });
   }
 
   function updateEditing<K extends keyof Song>(field: K, value: Song[K]) {
@@ -285,15 +332,92 @@ export default function AdminPage() {
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm"
               />
             </div>
+
+            {/* Audio */}
             <div>
-              <label className="block text-sm font-medium mb-1">오디오 URL</label>
+              <label className="block text-sm font-medium mb-1">오디오</label>
+              {editingSong.audioUrl && (
+                <div className="flex items-center gap-2 mb-2">
+                  <audio controls preload="metadata" className="flex-1 h-10">
+                    <source src={editingSong.audioUrl} />
+                  </audio>
+                  <button
+                    type="button"
+                    onClick={() => updateEditing("audioUrl", undefined)}
+                    className="text-red-400 hover:text-red-600 text-sm shrink-0"
+                  >
+                    삭제
+                  </button>
+                </div>
+              )}
+              <div className="flex items-center gap-3">
+                <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm cursor-pointer transition-opacity ${uploadingAudio ? "bg-gray-300 text-gray-500" : "bg-primary text-white hover:opacity-90"}`}>
+                  <input
+                    type="file"
+                    accept="audio/*"
+                    className="hidden"
+                    disabled={uploadingAudio}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleAudioUpload(file);
+                      e.target.value = "";
+                    }}
+                  />
+                  {uploadingAudio ? "업로드 중..." : "오디오 파일 선택"}
+                </label>
+                <span className="text-xs text-muted">또는 URL 직접 입력:</span>
+              </div>
               <input
                 type="url"
                 value={editingSong.audioUrl || ""}
                 onChange={(e) => updateEditing("audioUrl", e.target.value || undefined)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm"
+                placeholder="https://example.com/song.mp3"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm mt-2"
               />
             </div>
+          </section>
+
+          {/* Sheet Music */}
+          <section className="bg-card border border-border rounded-xl p-6 space-y-4">
+            <h2 className="text-lg font-bold">악보</h2>
+
+            {/* Existing sheets */}
+            {editingSong.sheetMusicUrls && editingSong.sheetMusicUrls.length > 0 && (
+              <div className="space-y-3">
+                {editingSong.sheetMusicUrls.map((url, idx) => (
+                  <div key={idx} className="relative group">
+                    <img
+                      src={url}
+                      alt={`악보 ${idx + 1}`}
+                      className="w-full rounded-lg border border-border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeSheetUrl(idx)}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-7 h-7 text-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Upload */}
+            <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm cursor-pointer transition-opacity ${uploadingSheet ? "bg-gray-300 text-gray-500" : "bg-primary text-white hover:opacity-90"}`}>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                disabled={uploadingSheet}
+                onChange={(e) => {
+                  if (e.target.files?.length) handleSheetUpload(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+              {uploadingSheet ? "업로드 중..." : "악보 이미지 추가"}
+            </label>
           </section>
 
           {/* Lyrics */}

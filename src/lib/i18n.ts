@@ -454,6 +454,18 @@ const translations: Record<string, Record<SiteLang, string>> = {
     pt: "Partitura de piano", vi: "Bản nhạc piano", th: "โน้ตเปียโน",
     tl: "Piano Sheet Music", id: "Partitur piano", ee: "Piano ƒe haŋɔti",
   },
+  "song.viewSheet": {
+    ko: "악보보기", en: "View Sheet Music", ja: "楽譜を見る", zh: "查看乐谱",
+    es: "Ver partitura", fr: "Voir la partition", de: "Noten ansehen",
+    pt: "Ver partitura", vi: "Xem bản nhạc", th: "ดูโน้ตเพลง",
+    tl: "Tingnan ang sheet", id: "Lihat partitur", ee: "Kpɔ haŋɔti",
+  },
+  "song.hideSheet": {
+    ko: "악보닫기", en: "Hide Sheet Music", ja: "楽譜を閉じる", zh: "关闭乐谱",
+    es: "Ocultar partitura", fr: "Masquer la partition", de: "Noten ausblenden",
+    pt: "Ocultar partitura", vi: "Ẩn bản nhạc", th: "ซ่อนโน้ตเพลง",
+    tl: "Itago ang sheet", id: "Sembunyikan partitur", ee: "Ɣla haŋɔti",
+  },
   "upload.pianoSheet": {
     ko: "피아노 악보", en: "Piano Sheet Music", ja: "ピアノ楽譜", zh: "钢琴乐谱",
     es: "Partitura de piano", fr: "Partition de piano", de: "Klaviernoten",

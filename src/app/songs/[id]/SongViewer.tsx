@@ -72,10 +72,12 @@ export default function SongViewer({ song }: { song: Song }) {
             </label>
           )}
           {song.sheetMusicUrls && song.sheetMusicUrls.length > 0 && (
-            <label className="flex items-center gap-1.5 text-sm cursor-pointer">
-              <input type="checkbox" checked={showSheet} onChange={(e) => setShowSheet(e.target.checked)} className="accent-primary" />
-              {t("song.pianoSheet")}
-            </label>
+            <button
+              onClick={() => setShowSheet(!showSheet)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${showSheet ? "bg-primary text-white" : "bg-primary-light text-primary hover:bg-primary hover:text-white"}`}
+            >
+              {showSheet ? t("song.hideSheet") : t("song.viewSheet")}
+            </button>
           )}
         </div>
       </div>

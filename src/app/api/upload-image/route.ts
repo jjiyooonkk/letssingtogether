@@ -1,7 +1,12 @@
 import { NextRequest } from "next/server";
-import { writeFile } from "fs/promises";
+import { put } from "@vercel/blob";
+import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
+
+function useBlob() {
+  return !!process.env.BLOB_READ_WRITE_TOKEN;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +18,6 @@ export async function POST(request: NextRequest) {
     }
 
     const urls: string[] = [];
-
     const allowedTypes = ["image/", "audio/"];
 
     for (const file of files) {
@@ -25,19 +29,29 @@ export async function POST(request: NextRequest) {
       }
 
       const ext = file.name.split(".").pop() || "bin";
-      const filename = `${randomUUID()}.${ext}`;
-      const buffer = Buffer.from(await file.arrayBuffer());
+      const filename = `uploads/${randomUUID()}.${ext}`;
 
-      await writeFile(
-        path.join(process.cwd(), "public", "uploads", filename),
-        buffer
-      );
-
-      urls.push(`/uploads/${filename}`);
+      if (useBlob()) {
+        // Vercel: upload to Blob storage
+        const blob = await put(filename, file, {
+          access: "public",
+          addRandomSuffix: false,
+          contentType: file.type,
+        });
+        urls.push(blob.url);
+      } else {
+        // Local/Docker: write to public/uploads/
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const uploadsDir = path.join(process.cwd(), "public", "uploads");
+        await mkdir(uploadsDir, { recursive: true });
+        await writeFile(path.join(uploadsDir, `${randomUUID()}.${ext}`), buffer);
+        urls.push(`/uploads/${path.basename(filename)}`);
+      }
     }
 
     return Response.json({ urls });
-  } catch {
+  } catch (err) {
+    console.error("Upload error:", err);
     return Response.json({ error: "업로드 실패" }, { status: 500 });
   }
 }

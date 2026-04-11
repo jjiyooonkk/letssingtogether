@@ -3,7 +3,7 @@ import HomeClient from "./HomeClient";
 
 export const dynamic = "force-dynamic";
 
-export default function Home() {
-  const songs = getSongs();
+export default async function Home() {
+  const songs = await getSongs();
   return <HomeClient songs={songs} />;
 }

@@ -4,7 +4,7 @@ import { NextRequest } from "next/server";
 import type { Song } from "@/lib/constants";
 
 export async function GET() {
-  const songs = getSongs();
+  const songs = await getSongs();
   return Response.json(songs);
 }
 
@@ -81,13 +81,13 @@ Rules:
     }
 
     if (parsed.translations) {
-      const song = getSongById(songId);
+      const song = await getSongById(songId);
       const merged = { ...(song?.translations || {}), ...parsed.translations };
       updates.translations = merged;
     }
 
     if (Object.keys(updates).length > 0) {
-      updateSong(songId, updates as Partial<Song>);
+      await updateSong(songId, updates as Partial<Song>);
       revalidatePath("/");
       revalidatePath(`/songs/${songId}`);
     }
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const song = addSong({
+    const song = await addSong({
       title: body.title,
       artist: body.artist,
       category: body.category || "가요",
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
     revalidatePath(`/songs/${song.id}`);
 
     // Return the latest version (with translations)
-    const updated = getSongById(song.id) || song;
+    const updated = await getSongById(song.id) || song;
     return Response.json(updated, { status: 201 });
   } catch {
     return Response.json(

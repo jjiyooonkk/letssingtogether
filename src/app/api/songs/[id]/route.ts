@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const song = getSongById(id);
+  const song = await getSongById(id);
 
   if (!song) {
     return Response.json({ error: "노래를 찾을 수 없습니다." }, { status: 404 });
@@ -23,7 +23,7 @@ export async function PUT(
   const { id } = await params;
   const body = await request.json();
 
-  const updated = updateSong(id, body);
+  const updated = await updateSong(id, body);
   if (!updated) {
     return Response.json({ error: "노래를 찾을 수 없습니다." }, { status: 404 });
   }
@@ -40,7 +40,7 @@ export async function DELETE(
 ) {
   const { id } = await params;
 
-  const deleted = deleteSong(id);
+  const deleted = await deleteSong(id);
   if (!deleted) {
     return Response.json({ error: "노래를 찾을 수 없습니다." }, { status: 404 });
   }

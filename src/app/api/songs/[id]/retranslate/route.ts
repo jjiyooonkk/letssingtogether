@@ -32,7 +32,7 @@ export async function POST(
     // no body, fall through to read from file
   }
 
-  const song = getSongById(id);
+  const song = await getSongById(id);
   if (!song) {
     return Response.json({ error: "노래를 찾을 수 없습니다." }, { status: 404 });
   }
@@ -103,13 +103,13 @@ Rules:
     if (parsed.translations) {
       const merged = { ...song.translations, ...parsed.translations };
       merged.en = enTranslation;
-      updateSong(id, { translations: merged } as Partial<Song>);
+      await updateSong(id, { translations: merged } as Partial<Song>);
     }
 
     revalidatePath("/");
     revalidatePath(`/songs/${id}`);
 
-    const updated = getSongById(id);
+    const updated = await getSongById(id);
     return Response.json(updated);
   } catch (err) {
     console.error("Retranslate error:", err);

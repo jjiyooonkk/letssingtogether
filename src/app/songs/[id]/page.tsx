@@ -11,12 +11,12 @@ export default async function SongPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const song = getSongById(id);
+  const song = await getSongById(id);
 
   if (!song) return notFound();
 
   // Calculate song number within its category (가나다순)
-  const allSongs = getSongs();
+  const allSongs = await getSongs();
   const catSongs = allSongs
     .filter((s) => s.category === song.category)
     .sort((a, b) => a.title.localeCompare(b.title, "ko"));

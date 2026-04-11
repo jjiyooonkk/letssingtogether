@@ -9,8 +9,8 @@ export { CATEGORIES } from "./constants";
 const LOCAL_PATH = path.join(process.cwd(), "data", "songs.json");
 const BLOB_NAME = "songs.json";
 
-function isVercel() {
-  return !!process.env.VERCEL;
+function useBlob() {
+  return !!process.env.BLOB_READ_WRITE_TOKEN;
 }
 
 // --- Blob helpers ---
@@ -49,13 +49,18 @@ function writeLocal(songs: Song[]) {
 // --- Public API (async) ---
 
 export async function getSongs(): Promise<Song[]> {
-  if (isVercel()) {
-    const songs = await readBlob();
-    if (songs) return songs;
-    // First time on Vercel: seed from bundled file
-    const local = readLocal();
-    await writeBlob(local);
-    return local;
+  if (useBlob()) {
+    try {
+      const songs = await readBlob();
+      if (songs) return songs;
+      // First time: seed from bundled file
+      const local = readLocal();
+      await writeBlob(local);
+      return local;
+    } catch (err) {
+      console.error("Blob read failed, falling back to local:", err);
+      return readLocal();
+    }
   }
   return readLocal();
 }
@@ -73,7 +78,7 @@ export async function addSong(song: Omit<Song, "id" | "createdAt">): Promise<Son
     createdAt: new Date().toISOString(),
   };
   songs.push(newSong);
-  if (isVercel()) {
+  if (useBlob()) {
     await writeBlob(songs);
   } else {
     writeLocal(songs);
@@ -86,7 +91,7 @@ export async function updateSong(id: string, updates: Partial<Song>): Promise<So
   const idx = songs.findIndex((s) => s.id === id);
   if (idx === -1) return undefined;
   songs[idx] = { ...songs[idx], ...updates };
-  if (isVercel()) {
+  if (useBlob()) {
     await writeBlob(songs);
   } else {
     writeLocal(songs);
@@ -99,7 +104,7 @@ export async function deleteSong(id: string): Promise<boolean> {
   const idx = songs.findIndex((s) => s.id === id);
   if (idx === -1) return false;
   songs.splice(idx, 1);
-  if (isVercel()) {
+  if (useBlob()) {
     await writeBlob(songs);
   } else {
     writeLocal(songs);

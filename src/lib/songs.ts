@@ -38,29 +38,34 @@ async function writeBlob(songs: Song[]) {
 // --- Local file helpers ---
 
 function readLocal(): Song[] {
-  const raw = fs.readFileSync(LOCAL_PATH, "utf-8");
-  return JSON.parse(raw);
+  try {
+    const raw = fs.readFileSync(LOCAL_PATH, "utf-8");
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
 }
 
 function writeLocal(songs: Song[]) {
-  fs.writeFileSync(LOCAL_PATH, JSON.stringify(songs, null, 2), "utf-8");
+  try {
+    fs.writeFileSync(LOCAL_PATH, JSON.stringify(songs, null, 2), "utf-8");
+  } catch {
+    // read-only filesystem (Vercel), ignore
+  }
 }
 
 // --- Public API (async) ---
 
 export async function getSongs(): Promise<Song[]> {
   if (useBlob()) {
-    try {
-      const songs = await readBlob();
-      if (songs) return songs;
-      // First time: seed from bundled file
-      const local = readLocal();
-      await writeBlob(local);
-      return local;
-    } catch (err) {
-      console.error("Blob read failed, falling back to local:", err);
-      return readLocal();
+    const songs = await readBlob();
+    if (songs) return songs;
+    // First time: seed from bundled file
+    const local = readLocal();
+    if (local.length > 0) {
+      await writeBlob(local).catch(() => {});
     }
+    return local;
   }
   return readLocal();
 }
@@ -72,12 +77,7 @@ export async function getSongById(id: string): Promise<Song | undefined> {
 
 async function writeSongs(songs: Song[]) {
   if (useBlob()) {
-    try {
-      await writeBlob(songs);
-    } catch (err) {
-      console.error("Blob write failed, falling back to local:", err);
-      try { writeLocal(songs); } catch { /* read-only fs on Vercel */ }
-    }
+    await writeBlob(songs);
   } else {
     writeLocal(songs);
   }

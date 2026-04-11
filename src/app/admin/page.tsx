@@ -13,10 +13,21 @@ export default function AdminPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [showGayo, setShowGayo] = useState(false);
 
   useEffect(() => {
     fetchSongs();
+    const stored = localStorage.getItem("showGayo");
+    if (stored === "true") setShowGayo(true);
   }, []);
+
+  function toggleGayo() {
+    const next = !showGayo;
+    setShowGayo(next);
+    localStorage.setItem("showGayo", String(next));
+    // Notify other tabs
+    window.dispatchEvent(new StorageEvent("storage", { key: "showGayo", newValue: String(next) }));
+  }
 
   async function fetchSongs() {
     try {
@@ -259,6 +270,22 @@ export default function AdminPage() {
     <div className="max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold mb-2">관리자 페이지</h1>
       <p className="text-muted mb-6">노래를 수정하거나 삭제할 수 있습니다.</p>
+
+      {/* 가요 표시 토글 */}
+      <div className="bg-card border border-border rounded-xl px-5 py-4 mb-6 flex items-center justify-between">
+        <div>
+          <p className="font-bold text-sm">가요 카테고리 표시</p>
+          <p className="text-xs text-muted">홈 화면에서 가요 목록을 보이거나 숨깁니다.</p>
+        </div>
+        <button
+          onClick={toggleGayo}
+          className={`relative w-12 h-7 rounded-full transition-colors ${showGayo ? "bg-primary" : "bg-gray-300"}`}
+        >
+          <span
+            className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${showGayo ? "translate-x-5" : ""}`}
+          />
+        </button>
+      </div>
 
       {message && (
         <div

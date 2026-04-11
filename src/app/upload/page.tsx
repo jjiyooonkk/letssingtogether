@@ -4,18 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CATEGORIES } from "@/lib/constants";
 import { useLang } from "@/lib/LangContext";
-import { SITE_LANGUAGES } from "@/lib/i18n";
-
-interface LyricLine {
-  line: string;
-  chords: string;
-}
-
-interface TranslationInput {
-  lang: string;
-  title: string;
-  lines: string;
-}
 
 export default function UploadPage() {
   const router = useRouter();
@@ -32,39 +20,12 @@ export default function UploadPage() {
   const [sheetMusicFiles, setSheetMusicFiles] = useState<File[]>([]);
   const [sheetMusicPreviews, setSheetMusicPreviews] = useState<string[]>([]);
   const [uploadingSheets, setUploadingSheets] = useState(false);
-  const [lyrics, setLyrics] = useState<LyricLine[]>([{ line: "", chords: "" }]);
-  const [romanization, setRomanization] = useState("");
-  const [translations, setTranslations] = useState<TranslationInput[]>([
-    { lang: "en", title: "", lines: "" },
-  ]);
+  const [lyricsText, setLyricsText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [ocrMessage, setOcrMessage] = useState("");
   const [ocrPreview, setOcrPreview] = useState<string | null>(null);
   const [error, setError] = useState("");
-
-  function addLyricLine() {
-    setLyrics([...lyrics, { line: "", chords: "" }]);
-  }
-  function removeLyricLine(idx: number) {
-    setLyrics(lyrics.filter((_, i) => i !== idx));
-  }
-  function updateLyric(idx: number, field: keyof LyricLine, value: string) {
-    const updated = [...lyrics];
-    updated[idx][field] = value;
-    setLyrics(updated);
-  }
-  function addTranslation() {
-    setTranslations([...translations, { lang: "", title: "", lines: "" }]);
-  }
-  function removeTranslation(idx: number) {
-    setTranslations(translations.filter((_, i) => i !== idx));
-  }
-  function updateTranslation(idx: number, field: keyof TranslationInput, value: string) {
-    const updated = [...translations];
-    updated[idx][field] = value;
-    setTranslations(updated);
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -73,7 +34,8 @@ export default function UploadPage() {
       setError(t("upload.errorRequired"));
       return;
     }
-    if (lyrics.every((l) => !l.line.trim())) {
+    const lines = lyricsText.split("\n").map((l) => l.trim()).filter(Boolean);
+    if (lines.length === 0) {
       setError(t("upload.errorLyrics"));
       return;
     }
@@ -137,17 +99,9 @@ export default function UploadPage() {
       youtubeUrl: youtubeUrl.trim() || undefined,
       audioUrl: finalAudioUrl,
       sheetMusicUrls: [...urlSheets, ...uploadedUrls],
-      lyrics: lyrics.filter((l) => l.line.trim()).map((l) => ({
-        line: l.line.trim(),
-        chords: l.chords.split(",").map((c) => c.trim()),
-      })),
-      romanization: romanization.split("\n").map((r) => r.trim()),
-      translations: Object.fromEntries(
-        translations.filter((tr) => tr.lang.trim() && tr.lines.trim()).map((tr) => [
-          tr.lang.trim(),
-          { title: tr.title.trim() || title.trim(), lines: tr.lines.split("\n").map((l) => l.trim()) },
-        ])
-      ),
+      lyrics: lines.map((line) => ({ line, chords: [] as string[] })),
+      romanization: [],
+      translations: {},
     };
     try {
       const res = await fetch("/api/songs", {
@@ -237,7 +191,7 @@ export default function UploadPage() {
                     onClick={() => { setAudioFile(null); setAudioFileName(""); }}
                     className="text-red-400 hover:text-red-600"
                   >
-                    ×
+                    &times;
                   </button>
                 </div>
               )}
@@ -254,8 +208,6 @@ export default function UploadPage() {
         {/* Piano Sheet Music */}
         <section className="bg-card border border-border rounded-xl p-6 space-y-4">
           <h2 className="text-lg font-bold">{t("upload.pianoSheet")}</h2>
-
-          {/* File Upload */}
           <div>
             <label className="block text-sm font-medium mb-1">{t("upload.pianoSheetFile")}</label>
             <label className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm cursor-pointer bg-primary text-white hover:opacity-90 transition-opacity">
@@ -277,17 +229,11 @@ export default function UploadPage() {
             </label>
             <p className="text-xs text-muted mt-1">{t("upload.pianoSheetFileHint")}</p>
           </div>
-
-          {/* File Previews */}
           {sheetMusicPreviews.length > 0 && (
             <div className="flex flex-wrap gap-3">
               {sheetMusicPreviews.map((src, idx) => (
                 <div key={idx} className="relative group">
-                  <img
-                    src={src}
-                    alt={`Sheet ${idx + 1}`}
-                    className="h-28 w-auto rounded-lg border border-border object-cover"
-                  />
+                  <img src={src} alt={`Sheet ${idx + 1}`} className="h-28 w-auto rounded-lg border border-border object-cover" />
                   <button
                     type="button"
                     onClick={() => {
@@ -297,14 +243,12 @@ export default function UploadPage() {
                     }}
                     className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                   >
-                    ×
+                    &times;
                   </button>
                 </div>
               ))}
             </div>
           )}
-
-          {/* URL Input */}
           <div>
             <label className="block text-sm font-medium mb-1">{t("upload.pianoSheetUrl")}</label>
             <textarea
@@ -318,7 +262,7 @@ export default function UploadPage() {
           </div>
         </section>
 
-        {/* OCR - Handwritten Scan */}
+        {/* OCR - Image Scan */}
         <section className="bg-card border border-border rounded-xl p-6 space-y-4">
           <h2 className="text-lg font-bold">{t("ocr.title")}</h2>
           <p className="text-sm text-muted">{t("ocr.hint")}</p>
@@ -340,12 +284,9 @@ export default function UploadPage() {
 
                   setOcrMessage("");
                   setScanning(true);
-
-                  // Show preview
                   const previewUrl = URL.createObjectURL(file);
                   setOcrPreview(previewUrl);
 
-                  // Convert to base64
                   const buffer = await file.arrayBuffer();
                   const base64 = btoa(
                     new Uint8Array(buffer).reduce((s, b) => s + String.fromCharCode(b), "")
@@ -363,16 +304,11 @@ export default function UploadPage() {
                     }
                     const data = await res.json();
 
-                    // Fill in recognized data
                     if (data.title && !title) setTitle(data.title);
                     if (data.artist && !artist) setArtist(data.artist);
                     if (data.lyrics?.length) {
-                      setLyrics(
-                        data.lyrics.map((l: { line: string; chords: string }) => ({
-                          line: l.line || "",
-                          chords: l.chords || "",
-                        }))
-                      );
+                      const text = data.lyrics.map((l: { line: string }) => l.line || "").join("\n");
+                      setLyricsText((prev) => prev ? prev + "\n" + text : text);
                     }
                     setOcrMessage(t("ocr.success"));
                   } catch {
@@ -397,70 +333,22 @@ export default function UploadPage() {
           )}
         </section>
 
-        {/* Lyrics & Chords */}
+        {/* Lyrics */}
         <section className="bg-card border border-border rounded-xl p-6 space-y-4">
           <h2 className="text-lg font-bold">{t("upload.lyricsChords")}</h2>
-          <p className="text-sm text-muted">{t("upload.lyricsHint")}</p>
-          {lyrics.map((line, idx) => (
-            <div key={idx} className="flex gap-2 items-start">
-              <div className="flex-1 space-y-1">
-                <input type="text" value={line.line} onChange={(e) => updateLyric(idx, "line", e.target.value)} placeholder={`${idx + 1}`} className="w-full border border-border rounded-lg px-3 py-2 text-sm" />
-                <input type="text" value={line.chords} onChange={(e) => updateLyric(idx, "chords", e.target.value)} placeholder="Am, G, Em" className="w-full border border-border rounded-lg px-3 py-2 text-sm font-mono text-primary" />
-              </div>
-              {lyrics.length > 1 && (
-                <button type="button" onClick={() => removeLyricLine(idx)} className="text-red-400 hover:text-red-600 text-sm mt-2">
-                  {t("upload.delete")}
-                </button>
-              )}
-            </div>
-          ))}
-          <button type="button" onClick={addLyricLine} className="text-primary text-sm font-medium hover:underline">
-            {t("upload.addLine")}
-          </button>
-        </section>
-
-        {/* Romanization */}
-        <section className="bg-card border border-border rounded-xl p-6 space-y-4">
-          <h2 className="text-lg font-bold">{t("upload.romanization")}</h2>
-          <p className="text-sm text-muted">{t("upload.romanizationHint")}</p>
-          <textarea value={romanization} onChange={(e) => setRomanization(e.target.value)} rows={6} placeholder="arirang arirang arariyo" className="w-full border border-border rounded-lg px-3 py-2 text-sm font-mono" />
-        </section>
-
-        {/* Translations */}
-        <section className="bg-card border border-border rounded-xl p-6 space-y-4">
-          <h2 className="text-lg font-bold">{t("upload.translations")}</h2>
-          <p className="text-sm text-muted">{t("upload.translationsHint")}</p>
-          {translations.map((tr, idx) => (
-            <div key={idx} className="border border-border rounded-lg p-4 space-y-3">
-              <div className="flex gap-3">
-                <div className="w-44">
-                  <label className="block text-xs font-medium mb-1">{t("upload.langCode")}</label>
-                  <select value={tr.lang} onChange={(e) => updateTranslation(idx, "lang", e.target.value)} className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white">
-                    <option value="">--</option>
-                    {SITE_LANGUAGES.filter((l) => l.code !== "ko").map((l) => (
-                      <option key={l.code} value={l.code}>{l.flag} {l.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex-1">
-                  <label className="block text-xs font-medium mb-1">{t("upload.translatedTitle")}</label>
-                  <input type="text" value={tr.title} onChange={(e) => updateTranslation(idx, "title", e.target.value)} placeholder="Arirang" className="w-full border border-border rounded-lg px-3 py-2 text-sm" />
-                </div>
-                {translations.length > 1 && (
-                  <button type="button" onClick={() => removeTranslation(idx)} className="text-red-400 hover:text-red-600 text-sm self-end">
-                    {t("upload.delete")}
-                  </button>
-                )}
-              </div>
-              <div>
-                <label className="block text-xs font-medium mb-1">{t("upload.translatedLyrics")}</label>
-                <textarea value={tr.lines} onChange={(e) => updateTranslation(idx, "lines", e.target.value)} rows={4} placeholder="Arirang, Arirang, Arariyo" className="w-full border border-border rounded-lg px-3 py-2 text-sm" />
-              </div>
-            </div>
-          ))}
-          <button type="button" onClick={addTranslation} className="text-primary text-sm font-medium hover:underline">
-            {t("upload.addTranslation")}
-          </button>
+          <p className="text-sm text-muted">{t("upload.lyricsBulkHint")}</p>
+          <textarea
+            value={lyricsText}
+            onChange={(e) => setLyricsText(e.target.value)}
+            rows={12}
+            placeholder={"아리랑 아리랑 아라리요\n아리랑 고개로 넘어간다\n나를 버리고 가시는 님은\n십리도 못가서 발병난다"}
+            className="w-full border border-border rounded-lg px-3 py-2 text-sm"
+          />
+          {lyricsText.trim() && (
+            <p className="text-xs text-muted">
+              {lyricsText.split("\n").filter((l) => l.trim()).length}줄 입력됨 · 발음과 번역은 업로드 후 자동 생성됩니다
+            </p>
+          )}
         </section>
 
         <button type="submit" disabled={submitting} className="w-full bg-primary text-white py-3 rounded-xl font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50">

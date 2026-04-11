@@ -40,12 +40,8 @@ export default function SongList({ songs }: { songs: Song[] }) {
 
   const songNumberMap = useMemo(() => {
     const map = new Map<string, number>();
-    for (const cat of CATEGORIES) {
-      const catSongs = songs
-        .filter((s) => s.category === cat)
-        .sort((a, b) => a.title.localeCompare(b.title, "ko"));
-      catSongs.forEach((s, idx) => map.set(s.id, idx + 1));
-    }
+    const sorted = [...songs].sort((a, b) => a.title.localeCompare(b.title, "ko"));
+    sorted.forEach((s, idx) => map.set(s.id, idx + 1));
     return map;
   }, [songs]);
 

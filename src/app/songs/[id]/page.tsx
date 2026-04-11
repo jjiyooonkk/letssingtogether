@@ -15,12 +15,10 @@ export default async function SongPage({
 
   if (!song) return notFound();
 
-  // Calculate song number within its category (가나다순)
+  // Calculate song number (전체 가나다순)
   const allSongs = await getSongs();
-  const catSongs = allSongs
-    .filter((s) => s.category === song.category)
-    .sort((a, b) => a.title.localeCompare(b.title, "ko"));
-  const songNumber = catSongs.findIndex((s) => s.id === song.id) + 1;
+  const sorted = [...allSongs].sort((a, b) => a.title.localeCompare(b.title, "ko"));
+  const songNumber = sorted.findIndex((s) => s.id === song.id) + 1;
 
   return (
     <div>

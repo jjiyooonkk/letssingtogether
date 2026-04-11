@@ -1,5 +1,5 @@
 import { getSongById, updateSong } from "@/lib/songs";
-import type { Song } from "@/lib/constants";
+import type { Song, Translation } from "@/lib/constants";
 import { NextRequest } from "next/server";
 
 const LANG_TARGETS = [
@@ -21,13 +21,26 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  // Accept English translation from request body (admin just saved it)
+  let enTranslation: Translation | undefined;
+  try {
+    const body = await request.json();
+    if (body.en) enTranslation = body.en;
+  } catch {
+    // no body, fall through to read from file
+  }
+
   const song = getSongById(id);
   if (!song) {
     return Response.json({ error: "노래를 찾을 수 없습니다." }, { status: 404 });
   }
 
-  const enTranslation = song.translations?.en;
   if (!enTranslation) {
+    enTranslation = song.translations?.en;
+  }
+
+  if (!enTranslation || !enTranslation.title || !enTranslation.lines?.length) {
     return Response.json({ error: "영어 번역이 없습니다." }, { status: 400 });
   }
 
@@ -71,6 +84,8 @@ Rules:
     );
 
     if (!res.ok) {
+      const errText = await res.text();
+      console.error("Gemini API error:", res.status, errText);
       return Response.json({ error: "번역 API 호출 실패" }, { status: 502 });
     }
 
@@ -78,6 +93,7 @@ Rules:
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
+      console.error("Gemini response parse fail:", text);
       return Response.json({ error: "번역 결과 파싱 실패" }, { status: 502 });
     }
 
@@ -85,7 +101,6 @@ Rules:
 
     if (parsed.translations) {
       const merged = { ...song.translations, ...parsed.translations };
-      // Keep the English translation as-is (admin edited it)
       merged.en = enTranslation;
       updateSong(id, { translations: merged } as Partial<Song>);
     }

@@ -111,10 +111,13 @@ export default function AdminPage() {
       });
       if (!saveRes.ok) throw new Error();
 
-      // 2. Retranslate from English
+      // 2. Retranslate from English (send en translation directly)
       setRetranslating(true);
+      const enTrans = editingSong.translations?.en;
       const retransRes = await fetch(`/api/songs/${editingSong.id}/retranslate`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ en: enTrans }),
       });
       if (!retransRes.ok) {
         const data = await retransRes.json();

@@ -27,6 +27,45 @@ export default function UploadPage() {
   const [ocrPreview, setOcrPreview] = useState<string | null>(null);
   const [error, setError] = useState("");
 
+  // Preview translation state
+  const [translating, setTranslating] = useState(false);
+  const [previewRomanization, setPreviewRomanization] = useState<string[]>([]);
+  const [previewEnTitle, setPreviewEnTitle] = useState("");
+  const [previewEnArtist, setPreviewEnArtist] = useState("");
+  const [previewEnLines, setPreviewEnLines] = useState<string[]>([]);
+  const [previewReady, setPreviewReady] = useState(false);
+
+  async function handlePreviewTranslate() {
+    const lines = lyricsText.split("\n").map((l) => l.trim()).filter(Boolean);
+    if (!title.trim() || lines.length === 0) {
+      setError("제목과 가사를 먼저 입력해주세요.");
+      return;
+    }
+    setError("");
+    setTranslating(true);
+    try {
+      const res = await fetch("/api/preview-translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title.trim(), artist: artist.trim(), lyrics: lines }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "번역 실패");
+      }
+      const data = await res.json();
+      setPreviewRomanization(data.romanization || []);
+      setPreviewEnTitle(data.en?.title || "");
+      setPreviewEnArtist(data.en?.artist || "");
+      setPreviewEnLines(data.en?.lines || []);
+      setPreviewReady(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "번역 실패");
+    } finally {
+      setTranslating(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -91,6 +130,22 @@ export default function UploadPage() {
     }
 
     const urlSheets = sheetMusicInput.split("\n").map((s) => s.trim()).filter(Boolean);
+
+    // Build translations and romanization from preview if available
+    const translations: Record<string, { title: string; artist?: string; lines: string[] }> = {};
+    let romanization: string[] = [];
+
+    if (previewReady) {
+      if (previewEnTitle || previewEnLines.length > 0) {
+        translations.en = {
+          title: previewEnTitle,
+          artist: previewEnArtist || undefined,
+          lines: previewEnLines,
+        };
+      }
+      romanization = previewRomanization;
+    }
+
     const body = {
       title: title.trim(),
       artist: artist.trim(),
@@ -100,8 +155,8 @@ export default function UploadPage() {
       audioUrl: finalAudioUrl,
       sheetMusicUrls: [...urlSheets, ...uploadedUrls],
       lyrics: lines.map((line) => ({ line, chords: [] as string[] })),
-      romanization: [],
-      translations: {},
+      romanization,
+      translations,
     };
     try {
       const res = await fetch("/api/songs", {
@@ -121,6 +176,8 @@ export default function UploadPage() {
       setSubmitting(false);
     }
   }
+
+  const lyricsLines = lyricsText.split("\n").map((l) => l.trim()).filter(Boolean);
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -339,19 +396,107 @@ export default function UploadPage() {
           <p className="text-sm text-muted">{t("upload.lyricsBulkHint")}</p>
           <textarea
             value={lyricsText}
-            onChange={(e) => setLyricsText(e.target.value)}
+            onChange={(e) => { setLyricsText(e.target.value); setPreviewReady(false); }}
             rows={12}
             placeholder={"아리랑 아리랑 아라리요\n아리랑 고개로 넘어간다\n나를 버리고 가시는 님은\n십리도 못가서 발병난다"}
             className="w-full border border-border rounded-lg px-3 py-2 text-sm"
           />
           {lyricsText.trim() && (
             <p className="text-xs text-muted">
-              {lyricsText.split("\n").filter((l) => l.trim()).length}줄 입력됨 · 발음과 번역은 업로드 후 자동 생성됩니다
+              {lyricsLines.length}줄 입력됨
             </p>
           )}
         </section>
 
-        <button type="submit" disabled={submitting} className="w-full bg-primary text-white py-3 rounded-xl font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50">
+        {/* Preview Translate Button */}
+        {!previewReady && (
+          <button
+            type="button"
+            onClick={handlePreviewTranslate}
+            disabled={translating || !lyricsText.trim() || !title.trim()}
+            className="w-full bg-amber-500 text-white py-3 rounded-xl font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            {translating ? "번역 중..." : "자동 번역 및 발음 확인하기 (영어로)"}
+          </button>
+        )}
+
+        {/* Translation Preview (editable) */}
+        {previewReady && (
+          <section className="bg-card border-2 border-amber-300 rounded-xl p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold">번역 및 발음 미리보기</h2>
+              <button
+                type="button"
+                onClick={handlePreviewTranslate}
+                disabled={translating}
+                className="text-sm text-amber-600 hover:underline font-medium"
+              >
+                {translating ? "번역 중..." : "다시 번역"}
+              </button>
+            </div>
+
+            {/* English title & artist */}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-muted mb-1">English Title</label>
+                <input
+                  type="text"
+                  value={previewEnTitle}
+                  onChange={(e) => setPreviewEnTitle(e.target.value)}
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted mb-1">English Artist</label>
+                <input
+                  type="text"
+                  value={previewEnArtist}
+                  onChange={(e) => setPreviewEnArtist(e.target.value)}
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Line by line: Korean → Romanization → English */}
+            <div className="space-y-4">
+              <label className="block text-xs font-medium text-muted">가사별 발음 & 영어 번역 (수정 가능)</label>
+              {lyricsLines.map((line, idx) => (
+                <div key={idx} className="border border-border rounded-lg p-3 space-y-1.5">
+                  <p className="text-sm font-medium">{line}</p>
+                  <input
+                    type="text"
+                    value={previewRomanization[idx] || ""}
+                    onChange={(e) => {
+                      const updated = [...previewRomanization];
+                      updated[idx] = e.target.value;
+                      setPreviewRomanization(updated);
+                    }}
+                    placeholder="발음"
+                    className="w-full border border-border rounded px-2 py-1.5 text-sm text-primary italic"
+                  />
+                  <input
+                    type="text"
+                    value={previewEnLines[idx] || ""}
+                    onChange={(e) => {
+                      const updated = [...previewEnLines];
+                      updated[idx] = e.target.value;
+                      setPreviewEnLines(updated);
+                    }}
+                    placeholder="English translation"
+                    className="w-full border border-border rounded px-2 py-1.5 text-sm text-muted"
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={submitting}
+          className="w-full bg-primary text-white py-3 rounded-xl font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
           {uploadingSheets ? t("upload.uploadingSheets") : submitting ? t("upload.submitting") : t("upload.submit")}
         </button>
       </form>

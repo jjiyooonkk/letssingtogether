@@ -1,4 +1,5 @@
 import { getSongById, updateSong, deleteSong } from "@/lib/songs";
+import { revalidatePath } from "next/cache";
 import { NextRequest } from "next/server";
 
 export async function GET(
@@ -27,6 +28,9 @@ export async function PUT(
     return Response.json({ error: "노래를 찾을 수 없습니다." }, { status: 404 });
   }
 
+  revalidatePath("/");
+  revalidatePath(`/songs/${id}`);
+
   return Response.json(updated);
 }
 
@@ -40,6 +44,8 @@ export async function DELETE(
   if (!deleted) {
     return Response.json({ error: "노래를 찾을 수 없습니다." }, { status: 404 });
   }
+
+  revalidatePath("/");
 
   return Response.json({ success: true });
 }

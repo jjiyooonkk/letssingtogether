@@ -1,5 +1,6 @@
 import { getSongById, updateSong } from "@/lib/songs";
 import type { Song, Translation } from "@/lib/constants";
+import { revalidatePath } from "next/cache";
 import { NextRequest } from "next/server";
 
 const LANG_TARGETS = [
@@ -104,6 +105,9 @@ Rules:
       merged.en = enTranslation;
       updateSong(id, { translations: merged } as Partial<Song>);
     }
+
+    revalidatePath("/");
+    revalidatePath(`/songs/${id}`);
 
     const updated = getSongById(id);
     return Response.json(updated);

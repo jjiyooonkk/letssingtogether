@@ -70,6 +70,19 @@ export async function getSongById(id: string): Promise<Song | undefined> {
   return songs.find((s) => s.id === id);
 }
 
+async function writeSongs(songs: Song[]) {
+  if (useBlob()) {
+    try {
+      await writeBlob(songs);
+    } catch (err) {
+      console.error("Blob write failed, falling back to local:", err);
+      try { writeLocal(songs); } catch { /* read-only fs on Vercel */ }
+    }
+  } else {
+    writeLocal(songs);
+  }
+}
+
 export async function addSong(song: Omit<Song, "id" | "createdAt">): Promise<Song> {
   const songs = await getSongs();
   const newSong: Song = {
@@ -78,11 +91,7 @@ export async function addSong(song: Omit<Song, "id" | "createdAt">): Promise<Son
     createdAt: new Date().toISOString(),
   };
   songs.push(newSong);
-  if (useBlob()) {
-    await writeBlob(songs);
-  } else {
-    writeLocal(songs);
-  }
+  await writeSongs(songs);
   return newSong;
 }
 
@@ -91,11 +100,7 @@ export async function updateSong(id: string, updates: Partial<Song>): Promise<So
   const idx = songs.findIndex((s) => s.id === id);
   if (idx === -1) return undefined;
   songs[idx] = { ...songs[idx], ...updates };
-  if (useBlob()) {
-    await writeBlob(songs);
-  } else {
-    writeLocal(songs);
-  }
+  await writeSongs(songs);
   return songs[idx];
 }
 
@@ -104,10 +109,6 @@ export async function deleteSong(id: string): Promise<boolean> {
   const idx = songs.findIndex((s) => s.id === id);
   if (idx === -1) return false;
   songs.splice(idx, 1);
-  if (useBlob()) {
-    await writeBlob(songs);
-  } else {
-    writeLocal(songs);
-  }
+  await writeSongs(songs);
   return true;
 }

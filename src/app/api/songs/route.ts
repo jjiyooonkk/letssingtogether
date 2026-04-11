@@ -135,10 +135,11 @@ export async function POST(request: NextRequest) {
     // Return the latest version (with translations)
     const updated = await getSongById(song.id) || song;
     return Response.json(updated, { status: 201 });
-  } catch {
+  } catch (err) {
+    console.error("POST /api/songs error:", err);
     return Response.json(
-      { error: "잘못된 요청입니다." },
-      { status: 400 }
+      { error: err instanceof Error ? err.message : "서버 오류가 발생했습니다." },
+      { status: 500 }
     );
   }
 }

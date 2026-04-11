@@ -3,29 +3,52 @@
 import { useState, useEffect } from "react";
 import { useLang } from "@/lib/LangContext";
 import { CATEGORIES } from "@/lib/constants";
-import type { Song } from "@/lib/constants";
+import type { Song, Translation } from "@/lib/constants";
+
+const ADMIN_PASSWORD = "lululala";
 
 export default function AdminPage() {
   const { t } = useLang();
+  const [authed, setAuthed] = useState(false);
+  const [password, setPassword] = useState("");
+  const [pwError, setPwError] = useState(false);
+
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingSong, setEditingSong] = useState<Song | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [retranslating, setRetranslating] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [showGayo, setShowGayo] = useState(false);
 
   useEffect(() => {
+    const saved = sessionStorage.getItem("adminAuthed");
+    if (saved === "true") setAuthed(true);
+  }, []);
+
+  useEffect(() => {
+    if (!authed) return;
     fetchSongs();
     const stored = localStorage.getItem("showGayo");
     if (stored === "true") setShowGayo(true);
-  }, []);
+  }, [authed]);
+
+  function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    if (password === ADMIN_PASSWORD) {
+      setAuthed(true);
+      sessionStorage.setItem("adminAuthed", "true");
+      setPwError(false);
+    } else {
+      setPwError(true);
+    }
+  }
 
   function toggleGayo() {
     const next = !showGayo;
     setShowGayo(next);
     localStorage.setItem("showGayo", String(next));
-    // Notify other tabs
     window.dispatchEvent(new StorageEvent("storage", { key: "showGayo", newValue: String(next) }));
   }
 
@@ -74,9 +97,52 @@ export default function AdminPage() {
     }
   }
 
+  async function handleSaveAndRetranslate() {
+    if (!editingSong) return;
+    setSaving(true);
+    try {
+      // 1. Save first
+      const saveRes = await fetch(`/api/songs/${editingSong.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editingSong),
+      });
+      if (!saveRes.ok) throw new Error();
+
+      // 2. Retranslate from English
+      setRetranslating(true);
+      const retransRes = await fetch(`/api/songs/${editingSong.id}/retranslate`, {
+        method: "POST",
+      });
+      if (!retransRes.ok) {
+        const data = await retransRes.json();
+        throw new Error(data.error || "번역 실패");
+      }
+      const updated = await retransRes.json();
+      setSongs(songs.map((s) => (s.id === updated.id ? updated : s)));
+      setEditingSong(null);
+      setMessage({ type: "success", text: "저장 및 다국어 번역이 완료되었습니다." });
+    } catch (err) {
+      setMessage({ type: "error", text: err instanceof Error ? err.message : "저장/번역 실패" });
+    } finally {
+      setSaving(false);
+      setRetranslating(false);
+    }
+  }
+
   function updateEditing<K extends keyof Song>(field: K, value: Song[K]) {
     if (!editingSong) return;
     setEditingSong({ ...editingSong, [field]: value });
+  }
+
+  function updateEnTranslation(field: keyof Translation, value: string | string[]) {
+    if (!editingSong) return;
+    const en = editingSong.translations?.en || { title: "", lines: [] };
+    const updated = { ...en, [field]: value };
+    setEditingSong({
+      ...editingSong,
+      translations: { ...editingSong.translations, en: updated },
+    });
   }
 
   function updateLyricLine(idx: number, field: "line" | "chords", value: string) {
@@ -106,6 +172,35 @@ export default function AdminPage() {
     });
   }
 
+  // Login screen
+  if (!authed) {
+    return (
+      <div className="max-w-sm mx-auto mt-20">
+        <div className="bg-card border border-border rounded-xl p-8 text-center">
+          <h1 className="text-2xl font-bold mb-2">관리자 로그인</h1>
+          <p className="text-muted text-sm mb-6">비밀번호를 입력하세요.</p>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setPwError(false); }}
+              placeholder="비밀번호"
+              className={`w-full border rounded-lg px-4 py-3 text-center ${pwError ? "border-red-400" : "border-border"}`}
+              autoFocus
+            />
+            {pwError && <p className="text-red-500 text-sm">비밀번호가 틀렸습니다.</p>}
+            <button
+              type="submit"
+              className="w-full bg-primary text-white py-3 rounded-lg font-bold hover:opacity-90 transition-opacity"
+            >
+              로그인
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="text-center py-20">
@@ -116,6 +211,8 @@ export default function AdminPage() {
 
   // Edit view
   if (editingSong) {
+    const enTrans = editingSong.translations?.en || { title: "", lines: [] };
+
     return (
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-6">
@@ -252,14 +349,61 @@ export default function AdminPage() {
             />
           </section>
 
-          {/* Save */}
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="w-full bg-primary text-white py-3 rounded-xl font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            {saving ? "저장 중..." : "저장"}
-          </button>
+          {/* English Translation */}
+          <section className="bg-card border border-border rounded-xl p-6 space-y-4">
+            <div>
+              <h2 className="text-lg font-bold">영어 번역 (English)</h2>
+              <p className="text-xs text-muted mt-1">영어 번역을 수정하면 다른 언어도 영어를 기반으로 자동 번역됩니다.</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">영어 제목</label>
+              <input
+                type="text"
+                value={enTrans.title || ""}
+                onChange={(e) => updateEnTranslation("title", e.target.value)}
+                placeholder="English title"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">영어 아티스트</label>
+              <input
+                type="text"
+                value={enTrans.artist || ""}
+                onChange={(e) => updateEnTranslation("artist", e.target.value)}
+                placeholder="English artist"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">영어 가사 (줄바꿈으로 구분)</label>
+              <textarea
+                value={(enTrans.lines || []).join("\n")}
+                onChange={(e) => updateEnTranslation("lines", e.target.value.split("\n"))}
+                rows={Math.max(6, (enTrans.lines || []).length + 1)}
+                placeholder="Line 1&#10;Line 2&#10;Line 3"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm"
+              />
+            </div>
+          </section>
+
+          {/* Save buttons */}
+          <div className="space-y-3">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="w-full bg-primary text-white py-3 rounded-xl font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {saving && !retranslating ? "저장 중..." : "저장"}
+            </button>
+            <button
+              onClick={handleSaveAndRetranslate}
+              disabled={saving}
+              className="w-full bg-amber-500 text-white py-3 rounded-xl font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {retranslating ? "번역 중..." : "저장 + 영어 기반 다국어 재번역"}
+            </button>
+          </div>
         </div>
       </div>
     );

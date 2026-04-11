@@ -1,6 +1,7 @@
-import { getSongs, addSong, updateSong } from "@/lib/songs";
+import { getSongs, addSong, updateSong, getSongById } from "@/lib/songs";
 import { revalidatePath } from "next/cache";
 import { NextRequest } from "next/server";
+import type { Song } from "@/lib/constants";
 
 export async function GET() {
   const songs = getSongs();
@@ -61,7 +62,10 @@ Rules:
       }
     );
 
-    if (!res.ok) return;
+    if (!res.ok) {
+      console.error("Gemini API error:", res.status);
+      return;
+    }
 
     const data = await res.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -77,14 +81,15 @@ Rules:
     }
 
     if (parsed.translations) {
-      // Merge with any existing translations
-      const song = (await import("@/lib/songs")).getSongById(songId);
+      const song = getSongById(songId);
       const merged = { ...(song?.translations || {}), ...parsed.translations };
       updates.translations = merged;
     }
 
     if (Object.keys(updates).length > 0) {
-      updateSong(songId, updates as Partial<import("@/lib/songs").Song>);
+      updateSong(songId, updates as Partial<Song>);
+      revalidatePath("/");
+      revalidatePath(`/songs/${songId}`);
     }
   } catch (err) {
     console.error("Auto-translate error:", err);
@@ -115,18 +120,21 @@ export async function POST(request: NextRequest) {
       romanization: body.romanization || [],
     });
 
-    // Auto-translate in background (don't block the response)
+    // Run translation and wait for it before responding
     const lyricsLines = body.lyrics.map((l: { line: string }) => l.line);
     const hasTranslations = Object.keys(body.translations || {}).length >= LANG_TARGETS.length;
     const hasRomanization = (body.romanization || []).some((r: string) => r.trim());
 
     if (!hasTranslations || !hasRomanization) {
-      autoTranslate(song.id, body.title, body.artist, lyricsLines).catch(console.error);
+      await autoTranslate(song.id, body.title, body.artist, lyricsLines);
     }
 
     revalidatePath("/");
+    revalidatePath(`/songs/${song.id}`);
 
-    return Response.json(song, { status: 201 });
+    // Return the latest version (with translations)
+    const updated = getSongById(song.id) || song;
+    return Response.json(updated, { status: 201 });
   } catch {
     return Response.json(
       { error: "잘못된 요청입니다." },

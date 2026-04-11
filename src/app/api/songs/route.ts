@@ -1,4 +1,5 @@
 import { getSongs, addSong, updateSong } from "@/lib/songs";
+import { revalidatePath } from "next/cache";
 import { NextRequest } from "next/server";
 
 export async function GET() {
@@ -122,6 +123,8 @@ export async function POST(request: NextRequest) {
     if (!hasTranslations || !hasRomanization) {
       autoTranslate(song.id, body.title, body.artist, lyricsLines).catch(console.error);
     }
+
+    revalidatePath("/");
 
     return Response.json(song, { status: 201 });
   } catch {

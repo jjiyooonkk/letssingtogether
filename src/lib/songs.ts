@@ -38,3 +38,12 @@ export function updateSong(id: string, updates: Partial<Song>): Song | undefined
   fs.writeFileSync(DATA_PATH, JSON.stringify(songs, null, 2), "utf-8");
   return songs[idx];
 }
+
+export function deleteSong(id: string): boolean {
+  const songs = getSongs();
+  const idx = songs.findIndex((s) => s.id === id);
+  if (idx === -1) return false;
+  songs.splice(idx, 1);
+  fs.writeFileSync(DATA_PATH, JSON.stringify(songs, null, 2), "utf-8");
+  return true;
+}

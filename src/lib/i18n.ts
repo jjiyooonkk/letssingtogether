@@ -30,6 +30,12 @@ const translations: Record<string, Record<SiteLang, string>> = {
     pt: "Enviar", vi: "Tải lên", th: "อัปโหลด",
     tl: "Mag-upload", id: "Unggah", ee: "Ɖo ɖa",
   },
+  "nav.admin": {
+    ko: "관리", en: "Admin", ja: "管理", zh: "管理",
+    es: "Admin", fr: "Admin", de: "Admin",
+    pt: "Admin", vi: "Quản lý", th: "จัดการ",
+    tl: "Admin", id: "Admin", ee: "Admin",
+  },
   "footer.tagline": {
     ko: "함께 노래해요!", en: "Let's sing together!", ja: "一緒に歌おう！", zh: "一起唱歌吧！",
     es: "¡Cantemos juntos!", fr: "Chantons ensemble !", de: "Lasst uns zusammen singen!",

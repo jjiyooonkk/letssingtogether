@@ -10,6 +10,7 @@ export default function SongList({ songs }: { songs: Song[] }) {
   const { lang, t } = useLang();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [showGayo, setShowGayo] = useState(false);
 
   function songTitle(song: Song) {
     if (lang === "ko") return song.title;
@@ -42,9 +43,15 @@ export default function SongList({ songs }: { songs: Song[] }) {
     return Array.from(set).sort();
   }, [songs]);
 
+  const visibleCategories = useMemo(() => {
+    if (showGayo) return CATEGORIES;
+    return CATEGORIES.filter((c) => c !== "가요");
+  }, [showGayo]);
+
   const filtered = useMemo(() => {
     return songs
       .filter((s) => {
+        if (!showGayo && s.category === "가요" && activeCategory !== "가요") return false;
         if (activeCategory && s.category !== activeCategory) return false;
         if (activeTag && !s.tags?.includes(activeTag)) return false;
         return true;
@@ -70,7 +77,7 @@ export default function SongList({ songs }: { songs: Song[] }) {
             <button onClick={() => setActiveCategory(null)} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${activeCategory === null ? pillActive : pillInactive}`}>
               {t("filter.all")}
             </button>
-            {CATEGORIES.map((cat) => {
+            {visibleCategories.map((cat) => {
               const count = songs.filter((s) => s.category === cat).length;
               return (
                 <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${activeCategory === cat ? pillActive : pillInactive}`}>
@@ -78,6 +85,15 @@ export default function SongList({ songs }: { songs: Song[] }) {
                 </button>
               );
             })}
+            <button
+              onClick={() => {
+                setShowGayo(!showGayo);
+                if (showGayo && activeCategory === "가요") setActiveCategory(null);
+              }}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${showGayo ? "bg-amber-100 border border-amber-300 text-amber-700" : "bg-gray-100 border border-dashed border-gray-300 text-gray-400 hover:text-gray-600"}`}
+            >
+              {showGayo ? `${t("cat.가요")} ✕` : `${t("cat.가요")} +`}
+            </button>
           </div>
         </div>
 

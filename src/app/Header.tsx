@@ -31,6 +31,12 @@ export default function Header() {
           >
             {t("nav.upload")}
           </Link>
+          <Link
+            href="/admin"
+            className="text-muted hover:text-foreground transition-colors text-sm"
+          >
+            {t("nav.admin")}
+          </Link>
 
           {/* Language Dropdown */}
           <div className="relative">

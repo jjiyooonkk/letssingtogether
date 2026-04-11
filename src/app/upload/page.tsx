@@ -20,7 +20,9 @@ export default function UploadPage() {
   const [sheetMusicFiles, setSheetMusicFiles] = useState<File[]>([]);
   const [sheetMusicPreviews, setSheetMusicPreviews] = useState<string[]>([]);
   const [uploadingSheets, setUploadingSheets] = useState(false);
+  const [lyricsMode, setLyricsMode] = useState<"bulk" | "line">("bulk");
   const [lyricsText, setLyricsText] = useState("");
+  const [lyricsLines, setLyricsLines] = useState<{ line: string; chords: string }[]>([{ line: "", chords: "" }]);
   const [submitting, setSubmitting] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [ocrMessage, setOcrMessage] = useState("");
@@ -35,8 +37,15 @@ export default function UploadPage() {
   const [previewEnLines, setPreviewEnLines] = useState<string[]>([]);
   const [previewReady, setPreviewReady] = useState(false);
 
+  function getLyricsArray(): string[] {
+    if (lyricsMode === "bulk") {
+      return lyricsText.split("\n").map((l) => l.trim()).filter(Boolean);
+    }
+    return lyricsLines.map((l) => l.line.trim()).filter(Boolean);
+  }
+
   async function handlePreviewTranslate() {
-    const lines = lyricsText.split("\n").map((l) => l.trim()).filter(Boolean);
+    const lines = getLyricsArray();
     if (!title.trim() || lines.length === 0) {
       setError("제목과 가사를 먼저 입력해주세요.");
       return;
@@ -73,7 +82,7 @@ export default function UploadPage() {
       setError(t("upload.errorRequired"));
       return;
     }
-    const lines = lyricsText.split("\n").map((l) => l.trim()).filter(Boolean);
+    const lines = getLyricsArray();
     if (lines.length === 0) {
       setError(t("upload.errorLyrics"));
       return;
@@ -154,7 +163,12 @@ export default function UploadPage() {
       youtubeUrl: youtubeUrl.trim() || undefined,
       audioUrl: finalAudioUrl,
       sheetMusicUrls: [...urlSheets, ...uploadedUrls],
-      lyrics: lines.map((line) => ({ line, chords: [] as string[] })),
+      lyrics: lyricsMode === "line"
+        ? lyricsLines.filter((l) => l.line.trim()).map((l) => ({
+            line: l.line.trim(),
+            chords: l.chords.split(",").map((c) => c.trim()).filter(Boolean),
+          }))
+        : lines.map((line) => ({ line, chords: [] as string[] })),
       romanization,
       translations,
     };
@@ -177,7 +191,7 @@ export default function UploadPage() {
     }
   }
 
-  const lyricsLines = lyricsText.split("\n").map((l) => l.trim()).filter(Boolean);
+  const previewLyricsLines = getLyricsArray();
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -393,18 +407,94 @@ export default function UploadPage() {
         {/* Lyrics */}
         <section className="bg-card border border-border rounded-xl p-6 space-y-4">
           <h2 className="text-lg font-bold">{t("upload.lyricsChords")}</h2>
-          <p className="text-sm text-muted">{t("upload.lyricsBulkHint")}</p>
-          <textarea
-            value={lyricsText}
-            onChange={(e) => { setLyricsText(e.target.value); setPreviewReady(false); }}
-            rows={12}
-            placeholder={"아리랑 아리랑 아라리요\n아리랑 고개로 넘어간다\n나를 버리고 가시는 님은\n십리도 못가서 발병난다"}
-            className="w-full border border-border rounded-lg px-3 py-2 text-sm"
-          />
-          {lyricsText.trim() && (
-            <p className="text-xs text-muted">
-              {lyricsLines.length}줄 입력됨
-            </p>
+
+          {/* Mode toggle */}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => { setLyricsMode("bulk"); setPreviewReady(false); }}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${lyricsMode === "bulk" ? "bg-primary text-white" : "bg-card border border-border text-muted hover:text-foreground"}`}
+            >
+              가사 통째로 입력
+            </button>
+            <button
+              type="button"
+              onClick={() => { setLyricsMode("line"); setPreviewReady(false); }}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${lyricsMode === "line" ? "bg-primary text-white" : "bg-card border border-border text-muted hover:text-foreground"}`}
+            >
+              줄별 입력 (코드 포함)
+            </button>
+          </div>
+
+          {lyricsMode === "bulk" ? (
+            <>
+              <p className="text-sm text-muted">{t("upload.lyricsBulkHint")}</p>
+              <textarea
+                value={lyricsText}
+                onChange={(e) => { setLyricsText(e.target.value); setPreviewReady(false); }}
+                rows={12}
+                placeholder={"아리랑 아리랑 아라리요\n아리랑 고개로 넘어간다\n나를 버리고 가시는 님은\n십리도 못가서 발병난다"}
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm"
+              />
+              {lyricsText.trim() && (
+                <p className="text-xs text-muted">
+                  {getLyricsArray().length}줄 입력됨
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted">{t("upload.lyricsHint")}</p>
+              {lyricsLines.map((line, idx) => (
+                <div key={idx} className="flex gap-2 items-start">
+                  <span className="text-xs text-muted mt-3 w-6 text-right shrink-0">{idx + 1}</span>
+                  <div className="flex-1 space-y-1">
+                    <input
+                      type="text"
+                      value={line.line}
+                      onChange={(e) => {
+                        const updated = [...lyricsLines];
+                        updated[idx] = { ...updated[idx], line: e.target.value };
+                        setLyricsLines(updated);
+                        setPreviewReady(false);
+                      }}
+                      placeholder="가사"
+                      className="w-full border border-border rounded-lg px-3 py-2 text-sm"
+                    />
+                    <input
+                      type="text"
+                      value={line.chords}
+                      onChange={(e) => {
+                        const updated = [...lyricsLines];
+                        updated[idx] = { ...updated[idx], chords: e.target.value };
+                        setLyricsLines(updated);
+                      }}
+                      placeholder="코드 (Am, G, Em)"
+                      className="w-full border border-border rounded-lg px-3 py-2 text-sm font-mono text-primary"
+                    />
+                  </div>
+                  {lyricsLines.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLyricsLines(lyricsLines.filter((_, i) => i !== idx));
+                        setPreviewReady(false);
+                      }}
+                      className="text-red-400 hover:text-red-600 text-sm mt-2"
+                    >
+                      삭제
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setLyricsLines([...lyricsLines, { line: "", chords: "" }])}
+                className="text-primary text-sm font-medium hover:underline"
+              >
+                + 줄 추가
+              </button>
+            </>
           )}
         </section>
 
@@ -413,7 +503,7 @@ export default function UploadPage() {
           <button
             type="button"
             onClick={handlePreviewTranslate}
-            disabled={translating || !lyricsText.trim() || !title.trim()}
+            disabled={translating || getLyricsArray().length === 0 || !title.trim()}
             className="w-full bg-amber-500 text-white py-3 rounded-xl font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {translating ? "번역 중..." : "자동 번역 및 발음 확인하기 (영어로)"}
@@ -460,7 +550,7 @@ export default function UploadPage() {
             {/* Line by line: Korean → Romanization → English */}
             <div className="space-y-4">
               <label className="block text-xs font-medium text-muted">가사별 발음 & 영어 번역 (수정 가능)</label>
-              {lyricsLines.map((line, idx) => (
+              {previewLyricsLines.map((line, idx) => (
                 <div key={idx} className="border border-border rounded-lg p-3 space-y-1.5">
                   <p className="text-sm font-medium">{line}</p>
                   <input

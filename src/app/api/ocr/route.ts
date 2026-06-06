@@ -8,28 +8,12 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: "이미지가 필요합니다." }, { status: 400 });
     }
 
-    const apiKey = process.env.GOOGLE_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       return Response.json({ error: "API key가 설정되지 않았습니다." }, { status: 500 });
     }
 
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  inlineData: {
-                    mimeType: mimeType || "image/jpeg",
-                    data: image,
-                  },
-                },
-                {
-                  text: `이 이미지에서 노래 가사와 기타코드를 인식해주세요.
+    const ocrPrompt = `이 이미지에서 노래 가사와 기타코드를 인식해주세요.
 손글씨, 인쇄된 가사, 악보 위의 가사, 스크린샷 등 어떤 형태든 가사를 추출해주세요.
 
 다음 JSON 형식으로만 응답해주세요 (다른 텍스트 없이):
@@ -47,22 +31,44 @@ export async function POST(request: NextRequest) {
 - 기타코드는 해당 줄 위에 적혀있는 코드를 쉼표로 구분해서 넣어주세요
 - 코드가 없는 줄은 chords를 빈 문자열로 해주세요
 - 제목이나 아티스트를 알 수 없으면 빈 문자열로 해주세요
-- 반드시 유효한 JSON만 반환하세요`,
+- 반드시 유효한 JSON만 반환하세요`;
+
+    const res = await fetch(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: `data:${mimeType || "image/jpeg"};base64,${image}`,
+                  },
                 },
+                { type: "text", text: ocrPrompt },
               ],
             },
           ],
+          temperature: 0.3,
         }),
       }
     );
 
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.error?.message || "Gemini API 오류");
+      throw new Error(err.error?.message || "OpenAI API 오류");
     }
 
     const data = await res.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const text = data.choices?.[0]?.message?.content || "";
 
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {

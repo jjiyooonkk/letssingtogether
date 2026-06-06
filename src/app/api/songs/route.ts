@@ -24,7 +24,7 @@ const LANG_TARGETS = [
 ];
 
 async function autoTranslate(songId: string, title: string, artist: string, lyricsLines: string[]) {
-  const apiKey = process.env.GOOGLE_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return;
 
   const lyricsText = lyricsLines.map((l, i) => `${i + 1}. ${l}`).join("\n");
@@ -52,23 +52,28 @@ Rules:
 
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      "https://api.openai.com/v1/chat/completions",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
+          model: "gpt-4o-mini",
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.3,
         }),
       }
     );
 
     if (!res.ok) {
-      console.error("Gemini API error:", res.status);
+      console.error("OpenAI API error:", res.status);
       return;
     }
 
     const data = await res.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const text = data.choices?.[0]?.message?.content || "";
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return;
 

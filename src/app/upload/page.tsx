@@ -53,14 +53,22 @@ export default function UploadPage() {
     setError("");
     setTranslating(true);
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
       const res = await fetch("/api/preview-translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: title.trim(), artist: artist.trim(), lyrics: lines }),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "번역 실패");
+        let errMsg = `번역 실패 (HTTP ${res.status})`;
+        try {
+          const data = await res.json();
+          errMsg = data.error || errMsg;
+        } catch { /* ignore parse error */ }
+        throw new Error(errMsg);
       }
       const data = await res.json();
       setPreviewRomanization(data.romanization || []);
@@ -69,7 +77,11 @@ export default function UploadPage() {
       setPreviewEnLines(data.en?.lines || []);
       setPreviewReady(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "번역 실패");
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError("번역 요청 시간이 초과되었습니다 (30초). 다시 시도해주세요.");
+      } else {
+        setError(err instanceof Error ? err.message : "번역 실패");
+      }
     } finally {
       setTranslating(false);
     }

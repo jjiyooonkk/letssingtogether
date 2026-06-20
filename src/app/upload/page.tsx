@@ -569,7 +569,28 @@ export default function UploadPage() {
               <label className="block text-xs font-medium text-muted">가사별 발음 & 영어 번역 (수정 가능)</label>
               {previewLyricsLines.map((line, idx) => (
                 <div key={idx} className="border border-border rounded-lg p-3 space-y-1.5">
-                  <p className="text-sm font-medium">{line}</p>
+                  <input
+                    type="text"
+                    value={line}
+                    onChange={(e) => {
+                      if (lyricsMode === "bulk") {
+                        const lines = lyricsText.split("\n");
+                        const nonEmptyIdx = lyricsText.split("\n").reduce<number[]>((acc, l, i) => { if (l.trim()) acc.push(i); return acc; }, []);
+                        if (nonEmptyIdx[idx] !== undefined) {
+                          lines[nonEmptyIdx[idx]] = e.target.value;
+                          setLyricsText(lines.join("\n"));
+                        }
+                      } else {
+                        const updated = [...lyricsLines];
+                        const nonEmptyIdx = lyricsLines.reduce<number[]>((acc, l, i) => { if (l.line.trim()) acc.push(i); return acc; }, []);
+                        if (nonEmptyIdx[idx] !== undefined) {
+                          updated[nonEmptyIdx[idx]] = { ...updated[nonEmptyIdx[idx]], line: e.target.value };
+                          setLyricsLines(updated);
+                        }
+                      }
+                    }}
+                    className="w-full border border-border rounded px-2 py-1.5 text-sm font-medium"
+                  />
                   <input
                     type="text"
                     value={previewRomanization[idx] || ""}

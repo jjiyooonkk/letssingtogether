@@ -254,7 +254,7 @@ export default function UploadPage() {
               <label className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm cursor-pointer bg-primary text-white hover:opacity-90 transition-opacity">
                 <input
                   type="file"
-                  accept="audio/*"
+                  accept="audio/*,.mp3,.wav,.m4a,.ogg,.aac"
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];

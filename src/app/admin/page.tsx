@@ -357,7 +357,7 @@ export default function AdminPage() {
                 <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm cursor-pointer transition-opacity ${uploadingAudio ? "bg-gray-300 text-gray-500" : "bg-primary text-white hover:opacity-90"}`}>
                   <input
                     type="file"
-                    accept="audio/*"
+                    accept="audio/*,.mp3,.wav,.m4a,.ogg,.aac"
                     className="hidden"
                     disabled={uploadingAudio}
                     onChange={(e) => {

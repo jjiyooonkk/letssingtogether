@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: "이미지가 필요합니다." }, { status: 400 });
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = process.env.GOOGLE_API_KEY;
     if (!apiKey) {
       return Response.json({ error: "API key가 설정되지 않았습니다." }, { status: 500 });
     }
@@ -34,41 +34,29 @@ export async function POST(request: NextRequest) {
 - 반드시 유효한 JSON만 반환하세요`;
 
     const res = await fetch(
-      "https://api.openai.com/v1/chat/completions",
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "user",
-              content: [
-                {
-                  type: "image_url",
-                  image_url: {
-                    url: `data:${mimeType || "image/jpeg"};base64,${image}`,
-                  },
-                },
-                { type: "text", text: ocrPrompt },
-              ],
-            },
-          ],
-          temperature: 0.3,
+          contents: [{
+            parts: [
+              { inline_data: { mime_type: mimeType || "image/jpeg", data: image } },
+              { text: ocrPrompt },
+            ],
+          }],
+          generationConfig: { temperature: 0.3 },
         }),
       }
     );
 
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error?.message || "OpenAI API 오류");
+      const err = await res.text();
+      throw new Error(err || "Gemini API 오류");
     }
 
     const data = await res.json();
-    const text = data.choices?.[0]?.message?.content || "";
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {

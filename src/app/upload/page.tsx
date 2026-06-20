@@ -512,14 +512,19 @@ export default function UploadPage() {
 
         {/* Preview Translate Button */}
         {!previewReady && (
-          <button
-            type="button"
-            onClick={handlePreviewTranslate}
-            disabled={translating || getLyricsArray().length === 0 || !title.trim()}
-            className="w-full bg-amber-500 text-white py-3 rounded-xl font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            {translating ? "번역 중..." : "자동 번역 및 발음 확인하기 (영어로)"}
-          </button>
+          <>
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{error}</div>
+            )}
+            <button
+              type="button"
+              onClick={handlePreviewTranslate}
+              disabled={translating || getLyricsArray().length === 0 || !title.trim()}
+              className="w-full bg-amber-500 text-white py-3 rounded-xl font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {translating ? "번역 중..." : "자동 번역 및 발음 확인하기 (영어로)"}
+            </button>
+          </>
         )}
 
         {/* Translation Preview (editable) */}

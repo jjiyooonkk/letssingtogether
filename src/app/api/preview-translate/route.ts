@@ -53,7 +53,12 @@ Rules:
     if (!res.ok) {
       const errBody = await res.text();
       console.error("Gemini API error:", res.status, errBody);
-      return Response.json({ error: `번역 API 호출 실패 (${res.status})` }, { status: 502 });
+      let detail = "";
+      try {
+        const errJson = JSON.parse(errBody);
+        detail = errJson.error?.message || errBody.slice(0, 200);
+      } catch { detail = errBody.slice(0, 200); }
+      return Response.json({ error: `번역 API 호출 실패 (${res.status}): ${detail}` }, { status: 502 });
     }
 
     const data = await res.json();

@@ -92,7 +92,12 @@ Rules:
     if (!res.ok) {
       const errText = await res.text();
       console.error("OpenAI API error:", res.status, errText);
-      return Response.json({ error: "번역 API 호출 실패" }, { status: 502 });
+      let detail = "";
+      try {
+        const errJson = JSON.parse(errText);
+        detail = errJson.error?.message || errText.slice(0, 200);
+      } catch { detail = errText.slice(0, 200); }
+      return Response.json({ error: `번역 API 호출 실패 (${res.status}): ${detail}` }, { status: 502 });
     }
 
     const data = await res.json();

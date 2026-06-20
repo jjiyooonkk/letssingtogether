@@ -423,9 +423,38 @@ export default function AdminPage() {
             </label>
           </section>
 
-          {/* Lyrics */}
+          {/* Lyrics, Chords, Romanization, English - all in one */}
           <section className="bg-card border border-border rounded-xl p-6 space-y-4">
-            <h2 className="text-lg font-bold">가사 & 코드</h2>
+            <div>
+              <h2 className="text-lg font-bold">가사 & 코드 & 번역</h2>
+              <p className="text-xs text-muted mt-1">한국어, 코드, 발음, 영어 번역을 줄별로 함께 수정할 수 있습니다.</p>
+            </div>
+
+            {/* English title & artist */}
+            <div className="space-y-3 border border-border rounded-lg p-4 bg-amber-50">
+              <div>
+                <label className="block text-xs font-medium text-muted mb-1">English Title</label>
+                <input
+                  type="text"
+                  value={enTrans.title || ""}
+                  onChange={(e) => updateEnTranslation("title", e.target.value)}
+                  placeholder="English title"
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted mb-1">English Artist</label>
+                <input
+                  type="text"
+                  value={enTrans.artist || ""}
+                  onChange={(e) => updateEnTranslation("artist", e.target.value)}
+                  placeholder="English artist"
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Line by line */}
             {editingSong.lyrics.map((line, idx) => (
               <div key={idx} className="flex gap-2 items-start">
                 <span className="text-xs text-muted mt-3 w-6 text-right shrink-0">{idx + 1}</span>
@@ -435,7 +464,7 @@ export default function AdminPage() {
                     value={line.line}
                     onChange={(e) => updateLyricLine(idx, "line", e.target.value)}
                     placeholder="가사"
-                    className="w-full border border-border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border border-border rounded-lg px-3 py-2 text-sm font-medium"
                   />
                   <input
                     type="text"
@@ -443,6 +472,28 @@ export default function AdminPage() {
                     onChange={(e) => updateLyricLine(idx, "chords", e.target.value)}
                     placeholder="코드 (Am, G, Em)"
                     className="w-full border border-border rounded-lg px-3 py-2 text-sm font-mono text-primary"
+                  />
+                  <input
+                    type="text"
+                    value={editingSong.romanization[idx] || ""}
+                    onChange={(e) => {
+                      const updated = [...editingSong.romanization];
+                      updated[idx] = e.target.value;
+                      updateEditing("romanization", updated);
+                    }}
+                    placeholder="발음 (romanization)"
+                    className="w-full border border-border rounded-lg px-3 py-2 text-sm italic text-primary"
+                  />
+                  <input
+                    type="text"
+                    value={(enTrans.lines || [])[idx] || ""}
+                    onChange={(e) => {
+                      const lines = [...(enTrans.lines || [])];
+                      lines[idx] = e.target.value;
+                      updateEnTranslation("lines", lines);
+                    }}
+                    placeholder="English translation"
+                    className="w-full border border-border rounded-lg px-3 py-2 text-sm text-muted"
                   />
                 </div>
                 {editingSong.lyrics.length > 1 && (
@@ -463,55 +514,6 @@ export default function AdminPage() {
             >
               + 줄 추가
             </button>
-          </section>
-
-          {/* Romanization */}
-          <section className="bg-card border border-border rounded-xl p-6 space-y-4">
-            <h2 className="text-lg font-bold">발음 (로마자)</h2>
-            <textarea
-              value={editingSong.romanization.join("\n")}
-              onChange={(e) => updateEditing("romanization", e.target.value.split("\n"))}
-              rows={6}
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm font-mono"
-            />
-          </section>
-
-          {/* English Translation */}
-          <section className="bg-card border border-border rounded-xl p-6 space-y-4">
-            <div>
-              <h2 className="text-lg font-bold">영어 번역 (English)</h2>
-              <p className="text-xs text-muted mt-1">영어 번역을 수정하면 다른 언어도 영어를 기반으로 자동 번역됩니다.</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">영어 제목</label>
-              <input
-                type="text"
-                value={enTrans.title || ""}
-                onChange={(e) => updateEnTranslation("title", e.target.value)}
-                placeholder="English title"
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">영어 아티스트</label>
-              <input
-                type="text"
-                value={enTrans.artist || ""}
-                onChange={(e) => updateEnTranslation("artist", e.target.value)}
-                placeholder="English artist"
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">영어 가사 (줄바꿈으로 구분)</label>
-              <textarea
-                value={(enTrans.lines || []).join("\n")}
-                onChange={(e) => updateEnTranslation("lines", e.target.value.split("\n"))}
-                rows={Math.max(6, (enTrans.lines || []).length + 1)}
-                placeholder="Line 1&#10;Line 2&#10;Line 3"
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm"
-              />
-            </div>
           </section>
 
           {/* Save buttons */}

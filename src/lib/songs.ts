@@ -21,19 +21,26 @@ async function readBlob(): Promise<Song[] | null> {
     const blob = blobs.find((b) => b.pathname === BLOB_NAME);
     if (!blob) return null;
     const res = await fetch(blob.url);
+    if (!res.ok) return null;
     return res.json();
-  } catch {
+  } catch (err) {
+    console.error("Blob read error:", err);
     return null;
   }
 }
 
 async function writeBlob(songs: Song[]) {
-  await put(BLOB_NAME, JSON.stringify(songs, null, 2), {
-    access: "public",
-    addRandomSuffix: false,
-    allowOverwrite: true,
-    contentType: "application/json",
-  });
+  try {
+    await put(BLOB_NAME, JSON.stringify(songs, null, 2), {
+      access: "public",
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      contentType: "application/json",
+    });
+  } catch (err) {
+    console.error("Blob write error:", err);
+    throw new Error("데이터 저장 실패 — Blob 스토리지 한도 초과일 수 있습니다.");
+  }
 }
 
 // --- Local file helpers ---

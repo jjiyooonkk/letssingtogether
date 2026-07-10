@@ -37,6 +37,46 @@ export default function UploadPage() {
   const [previewEnLines, setPreviewEnLines] = useState<string[]>([]);
   const [previewReady, setPreviewReady] = useState(false);
 
+  // Multi-language translation state
+  const [multiTranslating, setMultiTranslating] = useState(false);
+  const [multiTranslations, setMultiTranslations] = useState<Record<string, { title: string; artist?: string; lines: string[] }>>({});
+  const [multiTranslated, setMultiTranslated] = useState(false);
+
+  async function handleMultiTranslate() {
+    if (!previewEnTitle || previewEnLines.length === 0) {
+      setError("영어 번역이 먼저 필요합니다.");
+      return;
+    }
+    setError("");
+    setMultiTranslating(true);
+    try {
+      const res = await fetch("/api/preview-multi-translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          enTitle: previewEnTitle,
+          enArtist: previewEnArtist || artist.trim(),
+          enLines: previewEnLines,
+        }),
+      });
+      if (!res.ok) {
+        let errMsg = `다국어 번역 실패 (HTTP ${res.status})`;
+        try {
+          const data = await res.json();
+          errMsg = data.error || errMsg;
+        } catch { /* ignore */ }
+        throw new Error(errMsg);
+      }
+      const data = await res.json();
+      setMultiTranslations(data.translations || {});
+      setMultiTranslated(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "다국어 번역 실패");
+    } finally {
+      setMultiTranslating(false);
+    }
+  }
+
   function getLyricsArray(): string[] {
     if (lyricsMode === "bulk") {
       return lyricsText.split("\n").map((l) => l.trim()).filter(Boolean);
@@ -165,6 +205,11 @@ export default function UploadPage() {
         };
       }
       romanization = previewRomanization;
+    }
+
+    // Merge multi-language translations
+    if (multiTranslated && Object.keys(multiTranslations).length > 0) {
+      Object.assign(translations, multiTranslations);
     }
 
     const body = {
@@ -617,6 +662,24 @@ export default function UploadPage() {
               ))}
             </div>
           </section>
+        )}
+
+        {/* Multi-language translate button */}
+        {previewReady && !multiTranslated && (
+          <button
+            type="button"
+            onClick={handleMultiTranslate}
+            disabled={multiTranslating || !previewEnTitle || previewEnLines.length === 0}
+            className="w-full bg-green-500 text-white py-3 rounded-xl font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            {multiTranslating ? "다국어 번역 중..." : "영어 기반 다국어 번역 (11개 언어)"}
+          </button>
+        )}
+
+        {multiTranslated && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+            {Object.keys(multiTranslations).length}개 언어로 번역 완료! 아래 업로드 버튼을 눌러주세요.
+          </div>
         )}
 
         {/* Submit */}

@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { put, list } from "@vercel/blob";
+import { put } from "@vercel/blob";
 import type { Song } from "./constants";
 
 export type { Song, SongLine, Translation, Category } from "./constants";
@@ -13,14 +13,24 @@ function useBlob() {
   return !!process.env.BLOB_READ_WRITE_TOKEN;
 }
 
+// Derive the Blob store base URL from the token
+// Token format: vercel_blob_rw_<storeId>_<random>
+function getBlobBaseUrl(): string | null {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!token) return null;
+  const match = token.match(/^vercel_blob_rw_([a-zA-Z0-9]+)_/);
+  if (!match) return null;
+  return `https://${match[1]}.public.blob.vercel-storage.com`;
+}
+
 // --- Blob helpers ---
 
+// Read directly via URL (Simple Operation — no list() needed)
 async function readBlob(): Promise<Song[] | null> {
   try {
-    const { blobs } = await list({ prefix: BLOB_NAME });
-    const blob = blobs.find((b) => b.pathname === BLOB_NAME);
-    if (!blob) return null;
-    const res = await fetch(blob.url);
+    const baseUrl = getBlobBaseUrl();
+    if (!baseUrl) return null;
+    const res = await fetch(`${baseUrl}/${BLOB_NAME}`, { cache: "no-store" });
     if (!res.ok) return null;
     return res.json();
   } catch (err) {

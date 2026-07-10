@@ -8,8 +8,7 @@ export async function GET() {
   return Response.json(songs);
 }
 
-const LANG_TARGETS = [
-  { code: "en", name: "English" },
+const OTHER_LANG_TARGETS = [
   { code: "ja", name: "Japanese" },
   { code: "zh", name: "Chinese (Simplified)" },
   { code: "es", name: "Spanish" },
@@ -23,30 +22,34 @@ const LANG_TARGETS = [
   { code: "ee", name: "Ewe" },
 ];
 
-async function autoTranslate(songId: string, title: string, artist: string, lyricsLines: string[]) {
+async function autoTranslateFromEnglish(
+  songId: string,
+  enTitle: string,
+  enArtist: string,
+  enLines: string[]
+) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return;
 
-  const lyricsText = lyricsLines.map((l, i) => `${i + 1}. ${l}`).join("\n");
+  const lyricsText = enLines.map((l, i) => `${i + 1}. ${l}`).join("\n");
 
-  const prompt = `You are a professional translator. Translate the following Korean song information into all the listed languages. Also provide romanization (how to pronounce the Korean lyrics using the Latin/Roman alphabet).
+  const prompt = `You are a professional translator. Translate the following English song information into all the listed languages.
 
-Song Title: ${title}
-Artist: ${artist}
-Lyrics:
+Song Title (English): ${enTitle}
+Artist (English): ${enArtist}
+Lyrics (English):
 ${lyricsText}
 
 Respond ONLY with valid JSON in this exact format (no other text):
 {
-  "romanization": ["romanized line 1", "romanized line 2", ...],
   "translations": {
-${LANG_TARGETS.map((l) => `    "${l.code}": { "title": "translated title", "artist": "translated artist", "lines": ["translated line 1", "translated line 2", ...] }`).join(",\n")}
+${OTHER_LANG_TARGETS.map((l) => `    "${l.code}": { "title": "translated title", "artist": "translated artist", "lines": ["translated line 1", "translated line 2", ...] }`).join(",\n")}
   }
 }
 
 Rules:
-- romanization: write Korean pronunciation in Roman letters (e.g., 아리랑 → arirang)
-- Each language must translate ALL lyrics lines, keeping the same count (${lyricsLines.length} lines)
+- Translate FROM English to each target language
+- Each language must translate ALL lyrics lines, keeping the same count (${enLines.length} lines)
 - Keep proper nouns as-is when appropriate
 - Return ONLY valid JSON`;
 
@@ -68,7 +71,7 @@ Rules:
     );
 
     if (!res.ok) {
-      console.error("OpenAI API error:", res.status);
+      console.error("OpenAI API error:", res.status, await res.text());
       return;
     }
 
@@ -79,20 +82,10 @@ Rules:
 
     const parsed = JSON.parse(jsonMatch[0]);
 
-    const updates: Record<string, unknown> = {};
-
-    if (parsed.romanization?.length) {
-      updates.romanization = parsed.romanization;
-    }
-
     if (parsed.translations) {
       const song = await getSongById(songId);
       const merged = { ...(song?.translations || {}), ...parsed.translations };
-      updates.translations = merged;
-    }
-
-    if (Object.keys(updates).length > 0) {
-      await updateSong(songId, updates as Partial<Song>);
+      await updateSong(songId, { translations: merged } as Partial<Song>);
       revalidatePath("/");
       revalidatePath(`/songs/${songId}`);
     }
@@ -125,13 +118,17 @@ export async function POST(request: NextRequest) {
       romanization: body.romanization || [],
     });
 
-    // Run translation and wait for it before responding
-    const lyricsLines = body.lyrics.map((l: { line: string }) => l.line);
-    const hasTranslations = Object.keys(body.translations || {}).length >= LANG_TARGETS.length;
-    const hasRomanization = (body.romanization || []).some((r: string) => r.trim());
+    // Run multi-language translation from English if available
+    const enTrans = body.translations?.en;
+    const hasOtherTranslations = Object.keys(body.translations || {}).length > 1;
 
-    if (!hasTranslations || !hasRomanization) {
-      await autoTranslate(song.id, body.title, body.artist, lyricsLines);
+    if (enTrans?.title && enTrans?.lines?.length && !hasOtherTranslations) {
+      await autoTranslateFromEnglish(
+        song.id,
+        enTrans.title,
+        enTrans.artist || body.artist,
+        enTrans.lines
+      );
     }
 
     revalidatePath("/");

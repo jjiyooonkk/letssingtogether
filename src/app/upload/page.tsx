@@ -235,11 +235,16 @@ export default function UploadPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(`서버 오류 (${res.status}): 응답을 처리할 수 없습니다.`);
+      }
       if (!res.ok) {
-        const data = await res.json();
         throw new Error(data.error || "Upload failed");
       }
-      const data = await res.json();
       router.push(`/songs/${data.id}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Error");

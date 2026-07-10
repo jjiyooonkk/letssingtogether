@@ -118,17 +118,21 @@ export async function POST(request: NextRequest) {
       romanization: body.romanization || [],
     });
 
-    // Run multi-language translation from English if available
+    // Run multi-language translation from English if available (non-blocking)
     const enTrans = body.translations?.en;
     const hasOtherTranslations = Object.keys(body.translations || {}).length > 1;
 
     if (enTrans?.title && enTrans?.lines?.length && !hasOtherTranslations) {
-      await autoTranslateFromEnglish(
-        song.id,
-        enTrans.title,
-        enTrans.artist || body.artist,
-        enTrans.lines
-      );
+      try {
+        await autoTranslateFromEnglish(
+          song.id,
+          enTrans.title,
+          enTrans.artist || body.artist,
+          enTrans.lines
+        );
+      } catch (err) {
+        console.error("Auto-translate failed (non-blocking):", err);
+      }
     }
 
     revalidatePath("/");
